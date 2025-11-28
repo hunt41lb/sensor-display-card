@@ -138,4 +138,10 @@ export const styles = css`
     color: var(--secondary-text-color);
     font-style: italic;
   }
+
+  .no-entities {
+    font-size: 12px;
+    color: var(--secondary-text-color);
+    font-style: italic;
+  }
 `;
