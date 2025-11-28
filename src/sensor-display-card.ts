@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.3.0";
+const CARD_VERSION = "1.4.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -25,6 +25,9 @@ const SCHEMA = [
   { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
   { name: "motion_sensor", label: "Motion Sensor", selector: { entity: { domain: "binary_sensor" } } },
   { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
+  { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
+  { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
+  { name: "show_state", label: "Show State (On/Off)", selector: { boolean: {} }, default: false },
 ];
 
 @customElement("sensor-display-card-editor")
@@ -87,6 +90,9 @@ export class SensorDisplayCard extends LitElement {
     }
     this._config = {
       icon: "mdi:lightbulb",
+      show_name: true,
+      show_icon: true,
+      show_state: false,
       ...config,
     };
     
@@ -190,6 +196,16 @@ export class SensorDisplayCard extends LitElement {
       ? `color: rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})` 
       : "";
 
+    // Show toggles (default to true for name/icon, false for state)
+    const showName = this._config.show_name !== false;
+    const showIcon = this._config.show_icon !== false;
+    const showState = this._config.show_state === true;
+
+    // State text
+    const stateText = lightEntity 
+      ? (isOn ? "On" : "Off") 
+      : "";
+
     return html`
       <ha-card 
         class="${isOn ? "state-on" : "state-off"}"
@@ -197,12 +213,18 @@ export class SensorDisplayCard extends LitElement {
         @dblclick=${this._handleMoreInfo}
       >
         <!-- Name -->
-        <div class="name">${name}</div>
+        ${showName 
+          ? html`<div class="name">${name}${showState && stateText ? html` <span class="state-text">${stateText}</span>` : nothing}</div>` 
+          : html`<div class="name"></div>`}
 
         <!-- Icon Container (img_cell) -->
-        <div class="icon-container" style="${iconBgStyle}">
-          <ha-icon .icon=${icon} style="${iconColorStyle}"></ha-icon>
-        </div>
+        ${showIcon 
+          ? html`
+              <div class="icon-container" style="${iconBgStyle}">
+                <ha-icon .icon=${icon} style="${iconColorStyle}"></ha-icon>
+              </div>
+            ` 
+          : html`<div class="icon-container hidden"></div>`}
 
         <!-- Sensors (temp area) -->
         <div class="sensors">
@@ -278,6 +300,12 @@ export class SensorDisplayCard extends LitElement {
       white-space: nowrap;
     }
 
+    .name .state-text {
+      font-weight: 400;
+      opacity: 0.7;
+      font-size: 14px;
+    }
+
     /* Icon container - matches your styles.img_cell */
     .icon-container {
       grid-area: i;
@@ -291,6 +319,10 @@ export class SensorDisplayCard extends LitElement {
       height: 50px;
       background-color: var(--inactive-img-cell, rgba(0, 0, 0, 0.1));
       transition: background-color 0.3s ease;
+    }
+
+    .icon-container.hidden {
+      visibility: hidden;
     }
 
     /* Icon - matches your styles.icon */
