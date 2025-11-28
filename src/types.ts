@@ -12,23 +12,17 @@ export interface SensorDisplayCardConfig extends LovelaceCardConfig {
   power_sensor?: string;
   motion_sensor?: string;
 
+  // Layout
+  grid_area?: string;
+  view_layout?: {
+    "grid-area"?: string;
+    [key: string]: unknown;
+  };
+
   // Action configurations
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;
   double_tap_action?: ActionConfig;
-
-  // Layout configurations
-  grid_area?: string;
-}
-
-export interface ActionHandlerDetail {
-  action: "tap" | "hold" | "double_tap";
-}
-
-export interface ActionHandlerOptions {
-  hasHold?: boolean;
-  hasDoubleClick?: boolean;
-  disabled?: boolean;
 }
 
 // Extend Window interface for custom card registration
