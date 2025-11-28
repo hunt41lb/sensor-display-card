@@ -7,7 +7,7 @@ function t(t,e,s,i){var o,n=arguments.length,r=n<3?e:null===i?i=Object.getOwnPro
         @value-changed=${this._valueChanged}
       ></ha-form>
     `:D``}};t([lt({attribute:!1})],ft.prototype,"hass",void 0),t([dt()],ft.prototype,"_config",void 0),ft=t([at("sensor-display-card-editor")],ft);let mt=class extends nt{static getConfigElement(){return document.createElement("sensor-display-card-editor")}static getStubConfig(){return{type:"custom:sensor-display-card",name:"New Sensor Card",icon:"mdi:lightbulb"}}setConfig(t){if(!t)throw new Error("Invalid configuration");this._config={icon:"mdi:lightbulb",show_name:!0,show_icon:!0,show_state:!1,...t},this._config.grid_area&&(this.style.gridArea=this._config.grid_area),this._config.view_layout?.["grid-area"]&&(this.style.gridArea=this._config.view_layout["grid-area"])}getLayoutOptions(){return this._config?.grid_area?{grid_area:this._config.grid_area}:{}}_parseValue(t){if(!t||"unavailable"===t||"unknown"===t)return"--";const e=parseFloat(t);return isNaN(e)?"--":e.toFixed(0)}_handleClick(){if(!this.hass||!this._config?.entity)return;const t=this._config.entity;this.hass.callService("light","toggle",{entity_id:t})}_handleMoreInfo(){if(!this._config?.entity)return;const t=new CustomEvent("hass-more-info",{bubbles:!0,composed:!0,detail:{entityId:this._config.entity}});this.dispatchEvent(t)}updated(t){super.updated(t),this._config?.grid_area&&(this.style.gridArea=this._config.grid_area)}render(){if(!this._config||!this.hass)return D`<ha-card>Loading...</ha-card>`;const t=this._config.entity?this.hass.states[this._config.entity]:void 0,e=this._config.temp_sensor?this.hass.states[this._config.temp_sensor]:void 0,s=this._config.humidity_sensor?this.hass.states[this._config.humidity_sensor]:void 0,i=this._config.power_sensor?this.hass.states[this._config.power_sensor]:void 0,o=this._config.motion_sensor?this.hass.states[this._config.motion_sensor]:void 0,n="on"===t?.state,r=t?.attributes?.rgb_color,a="on"===o?.state,c=this._config.name||t?.attributes?.friendly_name||this._config.entity||"Sensor Card",h=this._config.icon||"mdi:lightbulb",l=r&&n?`background-color: rgba(${r[0]}, ${r[1]}, ${r[2]}, 0.2)`:"",d=r&&n?`color: rgb(${r[0]}, ${r[1]}, ${r[2]})`:"",p=!1!==this._config.show_name,u=!1!==this._config.show_icon,_=!0===this._config.show_state,f=t?n?"On":"Off":"";return D`
-      <ha-card 
+      <ha-card
         class="${n?"state-on":"state-off"}"
         @click=${this._handleClick}
         @dblclick=${this._handleMoreInfo}
@@ -124,8 +124,8 @@ function t(t,e,s,i){var o,n=arguments.length,r=n<3?e:null===i?i=Object.getOwnPro
 
     /* Temperature - matches your custom_fields.temp styles */
     .temp {
-      font-size: 30px;
-      line-height: 30px;
+      font-size: 16px;
+      line-height: 16px;
       font-weight: 300;
       color: var(--primary-text-color);
     }
@@ -164,7 +164,7 @@ function t(t,e,s,i){var o,n=arguments.length,r=n<3?e:null===i?i=Object.getOwnPro
     }
 
     .motion ha-icon.motion-active {
-      color: var(--warning-color, var(--warning, #ffc107));
+      color: var(--state-active-color, var(--state-active-color, #ffc107));
       animation: pulse 1.5s ease-in-out infinite;
     }
 
