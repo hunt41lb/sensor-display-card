@@ -1,17 +1,11 @@
-import { LitElement, html, TemplateResult, nothing } from "lit";
-import { customElement, state } from "lit/decorators.js";
-import { HomeAssistant, hasAction } from "custom-card-helpers";
+import { LitElement, html, css, TemplateResult, nothing } from "lit";
+import { customElement, property, state } from "lit/decorators.js";
+import { HomeAssistant, fireEvent } from "custom-card-helpers";
 import { HassEntity } from "home-assistant-js-websocket";
-
-import { styles } from "./styles";
-import { actionHandler } from "./action-handler-directive";
-import type { SensorDisplayCardConfig, ActionHandlerDetail } from "./types";
-
-// Import editor for side effects (registration)
-import "./editor";
+import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.0.1";
+const CARD_VERSION = "1.2.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -19,34 +13,66 @@ console.info(
   "color: #3498db; background: white; font-weight: bold;"
 );
 
+// ============================================================================
+// EDITOR COMPONENT
+// ============================================================================
+const SCHEMA = [
+  { name: "name", label: "Card Name", selector: { text: {} } },
+  { name: "icon", label: "Icon", selector: { icon: {} } },
+  { name: "entity", label: "Light Entity", selector: { entity: { domain: "light" } } },
+  { name: "temp_sensor", label: "Temperature Sensor", selector: { entity: { domain: "sensor" } } },
+  { name: "humidity_sensor", label: "Humidity Sensor", selector: { entity: { domain: "sensor" } } },
+  { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
+  { name: "motion_sensor", label: "Motion Sensor", selector: { entity: { domain: "binary_sensor" } } },
+  { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
+];
+
+@customElement("sensor-display-card-editor")
+export class SensorDisplayCardEditor extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @state() private _config!: SensorDisplayCardConfig;
+
+  public setConfig(config: SensorDisplayCardConfig): void {
+    this._config = config;
+  }
+
+  private _computeLabel(schema: any): string {
+    return schema.label || schema.name;
+  }
+
+  private _valueChanged(ev: CustomEvent): void {
+    const config = ev.detail.value;
+    fireEvent(this, "config-changed", { config });
+  }
+
+  protected render(): TemplateResult {
+    if (!this.hass || !this._config) {
+      return html``;
+    }
+    return html`
+      <ha-form
+        .hass=${this.hass}
+        .data=${this._config}
+        .schema=${SCHEMA}
+        .computeLabel=${this._computeLabel}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
+    `;
+  }
+}
+
+// ============================================================================
+// MAIN CARD COMPONENT
+// ============================================================================
 @customElement("sensor-display-card")
 export class SensorDisplayCard extends LitElement {
-  // Styles from external file
-  static styles = styles;
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @state() private _config!: SensorDisplayCardConfig;
 
-  // Internal hass reference (not reactive)
-  private _hass!: HomeAssistant;
-
-  // Card configuration
-  private _config!: SensorDisplayCardConfig;
-
-  // Reactive state properties - only these trigger re-renders
-  @state() private _lightEntity?: HassEntity;
-  @state() private _tempValue?: string;
-  @state() private _humidityValue?: string;
-  @state() private _powerValue?: string;
-  @state() private _motionActive = false;
-
-  /**
-   * Returns the editor element for the visual config UI
-   */
   public static getConfigElement(): HTMLElement {
     return document.createElement("sensor-display-card-editor");
   }
 
-  /**
-   * Returns stub config for card picker preview
-   */
   public static getStubConfig(): Partial<SensorDisplayCardConfig> {
     return {
       type: "custom:sensor-display-card",
@@ -55,264 +81,283 @@ export class SensorDisplayCard extends LitElement {
     };
   }
 
-  /**
-   * Called once when card configuration is set or changed
-   * All entities are now optional
-   */
   public setConfig(config: SensorDisplayCardConfig): void {
     if (!config) {
       throw new Error("Invalid configuration");
     }
-
     this._config = {
-      tap_action: { action: "toggle" },
-      hold_action: { action: "more-info" },
-      double_tap_action: { action: "more-info" },
       icon: "mdi:lightbulb",
       ...config,
     };
-
-    // Refresh state if hass is already available
-    if (this._hass) {
-      this._updateStates();
+    
+    // Apply grid-area to host element if configured
+    if (this._config.grid_area) {
+      this.style.gridArea = this._config.grid_area;
+    }
+    
+    // Also support view_layout for layout-card compatibility
+    if (this._config.view_layout?.["grid-area"]) {
+      this.style.gridArea = this._config.view_layout["grid-area"];
     }
   }
 
-  /**
-   * Hass setter - called on EVERY state change in HA
-   * CRITICAL: Extract only relevant states to minimize re-renders
-   */
-  set hass(hass: HomeAssistant) {
-    this._hass = hass;
-    this._updateStates();
+  // This is used by layout-card to get the view_layout
+  public getLayoutOptions() {
+    if (this._config?.grid_area) {
+      return {
+        grid_area: this._config.grid_area,
+      };
+    }
+    return {};
   }
 
-  /**
-   * Extract relevant entity states into reactive properties
-   */
-  private _updateStates(): void {
-    if (!this._hass || !this._config) return;
-
-    // Light entity (optional - using 'entity' as the key to match editor)
-    if (this._config.entity) {
-      const light = this._hass.states[this._config.entity];
-      if (this._lightEntity !== light) {
-        this._lightEntity = light;
-      }
-    } else {
-      if (this._lightEntity !== undefined) {
-        this._lightEntity = undefined;
-      }
-    }
-
-    // Temperature sensor (optional)
-    if (this._config.temp_sensor) {
-      const tempEntity = this._hass.states[this._config.temp_sensor];
-      const temp = tempEntity?.state;
-      if (this._tempValue !== temp) {
-        this._tempValue = temp;
-      }
-    } else {
-      if (this._tempValue !== undefined) {
-        this._tempValue = undefined;
-      }
-    }
-
-    // Humidity sensor (optional)
-    if (this._config.humidity_sensor) {
-      const humidityEntity = this._hass.states[this._config.humidity_sensor];
-      const humidity = humidityEntity?.state;
-      if (this._humidityValue !== humidity) {
-        this._humidityValue = humidity;
-      }
-    } else {
-      if (this._humidityValue !== undefined) {
-        this._humidityValue = undefined;
-      }
-    }
-
-    // Power sensor (optional)
-    if (this._config.power_sensor) {
-      const powerEntity = this._hass.states[this._config.power_sensor];
-      const power = powerEntity?.state;
-      if (this._powerValue !== power) {
-        this._powerValue = power;
-      }
-    } else {
-      if (this._powerValue !== undefined) {
-        this._powerValue = undefined;
-      }
-    }
-
-    // Motion sensor (optional)
-    if (this._config.motion_sensor) {
-      const motionEntity = this._hass.states[this._config.motion_sensor];
-      const motion = motionEntity?.state === "on";
-      if (this._motionActive !== motion) {
-        this._motionActive = motion;
-      }
-    } else {
-      if (this._motionActive !== false) {
-        this._motionActive = false;
-      }
-    }
-  }
-
-  /**
-   * Handle action events (tap, hold, double_tap)
-   */
-  private _handleAction(ev: CustomEvent<ActionHandlerDetail>): void {
-    if (!this._hass || !this._config) return;
-
-    const action = ev.detail.action;
-    const actionConfig = this._config[`${action}_action`];
-
-    if (!actionConfig) return;
-
-    // Only dispatch action if we have an entity to act on
-    const targetEntity = this._config.entity;
-    if (!targetEntity) return;
-
-    // Dispatch hass-action event for HA to handle
-    const event = new Event("hass-action", { bubbles: true, composed: true });
-    (event as any).detail = {
-      config: {
-        entity: targetEntity,
-        tap_action: this._config.tap_action,
-        hold_action: this._config.hold_action,
-        double_tap_action: this._config.double_tap_action,
-      },
-      action: action,
-    };
-    this.dispatchEvent(event);
-  }
-
-  /**
-   * Safely parse a numeric value
-   */
   private _parseValue(value: string | undefined): string {
-    if (value === undefined || value === null || value === "unavailable" || value === "unknown") {
+    if (!value || value === "unavailable" || value === "unknown") {
       return "--";
     }
     const num = parseFloat(value);
     return isNaN(num) ? "--" : num.toFixed(0);
   }
 
-  /**
-   * Render the card
-   */
+  private _handleClick(): void {
+    if (!this.hass || !this._config?.entity) return;
+    
+    const entityId = this._config.entity;
+    this.hass.callService("light", "toggle", { entity_id: entityId });
+  }
+
+  private _handleMoreInfo(): void {
+    if (!this._config?.entity) return;
+    
+    const event = new CustomEvent("hass-more-info", {
+      bubbles: true,
+      composed: true,
+      detail: { entityId: this._config.entity },
+    });
+    this.dispatchEvent(event);
+  }
+
+  protected updated(changedProps: Map<string, unknown>): void {
+    super.updated(changedProps);
+    
+    // Ensure grid-area is applied when config changes
+    if (this._config?.grid_area) {
+      this.style.gridArea = this._config.grid_area;
+    }
+  }
+
   protected render(): TemplateResult {
-    if (!this._config || !this._hass) {
-      return html`<ha-card><div class="unavailable">Loading...</div></ha-card>`;
+    if (!this._config || !this.hass) {
+      return html`<ha-card>Loading...</ha-card>`;
     }
 
-    // Determine light state and RGB color (if light entity is configured)
-    const isOn = this._lightEntity?.state === "on";
-    const rgbColor = this._lightEntity?.attributes?.rgb_color as [number, number, number] | undefined;
+    // Get entity states
+    const lightEntity: HassEntity | undefined = this._config.entity 
+      ? this.hass.states[this._config.entity] 
+      : undefined;
+    const tempEntity = this._config.temp_sensor 
+      ? this.hass.states[this._config.temp_sensor] 
+      : undefined;
+    const humidityEntity = this._config.humidity_sensor 
+      ? this.hass.states[this._config.humidity_sensor] 
+      : undefined;
+    const powerEntity = this._config.power_sensor 
+      ? this.hass.states[this._config.power_sensor] 
+      : undefined;
+    const motionEntity = this._config.motion_sensor 
+      ? this.hass.states[this._config.motion_sensor] 
+      : undefined;
 
-    // Dynamic styles based on RGB color
-    const iconContainerStyle = rgbColor && isOn 
-      ? `background-color: rgba(${rgbColor.join(",")}, 0.2);` 
-      : "";
+    // Determine states
+    const isOn = lightEntity?.state === "on";
+    const rgbColor = lightEntity?.attributes?.rgb_color as [number, number, number] | undefined;
+    const motionActive = motionEntity?.state === "on";
 
-    const iconStyle = rgbColor && isOn 
-      ? `color: rgb(${rgbColor.join(",")});` 
-      : "";
-
-    // Card name: config name > friendly_name > entity_id > default
+    // Card name
     const name = this._config.name 
-      || this._lightEntity?.attributes?.friendly_name 
+      || lightEntity?.attributes?.friendly_name 
       || this._config.entity 
       || "Sensor Card";
 
-    // Icon: config icon or default
+    // Icon
     const icon = this._config.icon || "mdi:lightbulb";
 
-    // Check if we have any sensors to display
-    const hasSensors = this._tempValue !== undefined 
-      || this._humidityValue !== undefined 
-      || this._powerValue !== undefined;
+    // Dynamic styles for RGB
+    const iconBgStyle = rgbColor && isOn 
+      ? `background-color: rgba(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]}, 0.2)` 
+      : "";
+    const iconColorStyle = rgbColor && isOn 
+      ? `color: rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})` 
+      : "";
 
     return html`
-      <ha-card
-        class="state-${isOn ? "on" : "off"}"
-        @action=${this._handleAction}
-        .actionHandler=${actionHandler({
-          hasHold: hasAction(this._config.hold_action),
-          hasDoubleClick: hasAction(this._config.double_tap_action),
-        })}
+      <ha-card 
+        class="${isOn ? "state-on" : "state-off"}"
+        @click=${this._handleClick}
+        @dblclick=${this._handleMoreInfo}
       >
-        <!-- Card Name -->
-        <div class="name">${name}</div>
-
-        <!-- Icon Container -->
-        <div class="icon-container ${rgbColor && isOn ? "has-color" : ""}" style="${iconContainerStyle}">
-          <ha-icon .icon=${icon} style="${iconStyle}"></ha-icon>
+        <div class="card-content">
+          <!-- Row 1: Name and Icon -->
+          <div class="top-row">
+            <div class="name">${name}</div>
+            <div class="icon-container" style="${iconBgStyle}">
+              <ha-icon .icon=${icon} style="${iconColorStyle}"></ha-icon>
+            </div>
+          </div>
+          
+          <!-- Row 2: Sensors and Motion -->
+          <div class="bottom-row">
+            <div class="sensors">
+              ${tempEntity 
+                ? html`<span class="temp">${this._parseValue(tempEntity.state)}°</span>` 
+                : nothing}
+              ${humidityEntity 
+                ? html`<span class="humidity">${this._parseValue(humidityEntity.state)}%</span>` 
+                : nothing}
+              ${powerEntity 
+                ? html`<span class="power">${this._parseValue(powerEntity.state)}W</span>` 
+                : nothing}
+              ${!tempEntity && !humidityEntity && !powerEntity && !lightEntity
+                ? html`<span class="placeholder">Configure entities</span>`
+                : nothing}
+            </div>
+            <div class="motion">
+              ${motionActive 
+                ? html`<ha-icon class="motion-active" icon="mdi:motion-sensor"></ha-icon>` 
+                : nothing}
+            </div>
+          </div>
         </div>
-
-        <!-- Sensor Values -->
-        <div class="sensors">
-          ${this._tempValue !== undefined
-            ? html`<span class="sensor-temp">${this._parseValue(this._tempValue)}°</span>`
-            : nothing}
-          ${this._humidityValue !== undefined
-            ? html`<span class="sensor-humidity">${this._parseValue(this._humidityValue)}%</span>`
-            : nothing}
-          ${this._powerValue !== undefined
-            ? html`<span class="sensor-power">${this._parseValue(this._powerValue)}W</span>`
-            : nothing}
-          ${!hasSensors && !this._lightEntity
-            ? html`<span class="no-entities">Configure entities</span>`
-            : nothing}
-        </div>
-
-        <!-- Motion Sensor -->
-        ${this._config.motion_sensor
-          ? html`
-              <div class="motion">
-                ${this._motionActive
-                  ? html`<ha-icon class="motion-active" icon="mdi:motion-sensor"></ha-icon>`
-                  : nothing}
-              </div>
-            `
-          : nothing}
       </ha-card>
     `;
   }
 
-  /**
-   * Returns the card size for grid layout
-   */
   public getCardSize(): number {
     return 2;
   }
 
-  /**
-   * Returns grid layout options
-   */
-  public getGridOptions() {
-    return {
-      rows: 2,
-      columns: 6,
-      min_rows: 2,
-      min_columns: 3,
-    };
-  }
+  static styles = css`
+    :host {
+      display: block;
+    }
 
-  /**
-   * Returns layout options for section views
-   */
-  public getLayoutOptions() {
-    return {
-      grid_rows: 2,
-      grid_columns: 2,
-      grid_min_rows: 2,
-      grid_min_columns: 2,
-    };
-  }
+    ha-card {
+      padding: 6px;
+      height: 97px;
+      box-sizing: border-box;
+      cursor: pointer;
+      transition: background-color 0.3s ease, border 0.3s ease;
+    }
+
+    ha-card.state-on {
+      background-color: var(--ha-card-background, var(--card-background-color));
+      border: 1px solid var(--primary-text-color);
+    }
+
+    ha-card.state-off {
+      background-color: var(--ha-card-background, var(--card-background-color));
+    }
+
+    .card-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      justify-content: space-between;
+    }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .name {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--primary-text-color);
+      padding: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .icon-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: var(--secondary-background-color, rgba(0,0,0,0.1));
+      transition: background-color 0.3s ease;
+    }
+
+    .icon-container ha-icon {
+      --mdc-icon-size: 35px;
+      width: 35px;
+      height: 35px;
+      color: var(--primary-text-color);
+      transition: color 0.3s ease;
+    }
+
+    .bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 8px 4px 8px;
+    }
+
+    .sensors {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .temp {
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--primary-text-color);
+    }
+
+    .humidity,
+    .power {
+      font-size: 12px;
+      font-weight: 400;
+      opacity: 0.7;
+      color: var(--primary-text-color);
+    }
+
+    .placeholder {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--secondary-text-color);
+    }
+
+    .motion {
+      display: flex;
+      align-items: center;
+    }
+
+    .motion ha-icon {
+      --mdc-icon-size: 21px;
+      width: 21px;
+      height: 21px;
+    }
+
+    .motion ha-icon.motion-active {
+      color: var(--warning-color, #ffc107);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  `;
 }
 
-// Register the card with Home Assistant's card picker
+// Register the card
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "sensor-display-card",
