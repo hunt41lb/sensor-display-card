@@ -196,37 +196,35 @@ export class SensorDisplayCard extends LitElement {
         @click=${this._handleClick}
         @dblclick=${this._handleMoreInfo}
       >
-        <div class="card-content">
-          <!-- Row 1: Name and Icon -->
-          <div class="top-row">
-            <div class="name">${name}</div>
-            <div class="icon-container" style="${iconBgStyle}">
-              <ha-icon .icon=${icon} style="${iconColorStyle}"></ha-icon>
-            </div>
-          </div>
-          
-          <!-- Row 2: Sensors and Motion -->
-          <div class="bottom-row">
-            <div class="sensors">
-              ${tempEntity 
-                ? html`<span class="temp">${this._parseValue(tempEntity.state)}°</span>` 
-                : nothing}
-              ${humidityEntity 
-                ? html`<span class="humidity">${this._parseValue(humidityEntity.state)}%</span>` 
-                : nothing}
-              ${powerEntity 
-                ? html`<span class="power">${this._parseValue(powerEntity.state)}W</span>` 
-                : nothing}
-              ${!tempEntity && !humidityEntity && !powerEntity && !lightEntity
-                ? html`<span class="placeholder">Configure entities</span>`
-                : nothing}
-            </div>
-            <div class="motion">
-              ${motionActive 
-                ? html`<ha-icon class="motion-active" icon="mdi:motion-sensor"></ha-icon>` 
-                : nothing}
-            </div>
-          </div>
+        <!-- Name -->
+        <div class="name">${name}</div>
+
+        <!-- Icon Container (img_cell) -->
+        <div class="icon-container" style="${iconBgStyle}">
+          <ha-icon .icon=${icon} style="${iconColorStyle}"></ha-icon>
+        </div>
+
+        <!-- Sensors (temp area) -->
+        <div class="sensors">
+          ${tempEntity 
+            ? html`<span class="temp">${this._parseValue(tempEntity.state)}°</span>` 
+            : nothing}
+          ${humidityEntity 
+            ? html`<span class="humidity">${this._parseValue(humidityEntity.state)}%</span>` 
+            : nothing}
+          ${powerEntity 
+            ? html`<span class="power">${this._parseValue(powerEntity.state)}W</span>` 
+            : nothing}
+          ${!tempEntity && !humidityEntity && !powerEntity && !lightEntity
+            ? html`<span class="placeholder">Configure entities</span>`
+            : nothing}
+        </div>
+
+        <!-- Motion Sensor -->
+        <div class="motion">
+          ${motionActive 
+            ? html`<ha-icon class="motion-active" icon="mdi:motion-sensor"></ha-icon>` 
+            : nothing}
         </div>
       </ha-card>
     `;
@@ -241,7 +239,14 @@ export class SensorDisplayCard extends LitElement {
       display: block;
     }
 
+    /* Card - matches your button_card styles.card */
     ha-card {
+      display: grid;
+      grid-template-areas:
+        "n n i i"
+        "temp temp temp motion_sensor";
+      grid-template-rows: 1fr min-content;
+      grid-template-columns: min-content 1fr;
       padding: 6px;
       height: 97px;
       box-sizing: border-box;
@@ -255,71 +260,66 @@ export class SensorDisplayCard extends LitElement {
     }
 
     ha-card.state-off {
-      background-color: var(--ha-card-background, var(--card-background-color));
+      background-color: var(--ha-card-background-inactive, var(--ha-card-background));
     }
 
-    .card-content {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      justify-content: space-between;
-    }
-
-    .top-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
+    /* Name - matches your styles.name */
     .name {
+      grid-area: n;
+      justify-self: start;
+      align-self: start;
+      text-align: left;
       font-size: 16px;
       font-weight: 500;
       color: var(--primary-text-color);
-      padding: 8px;
+      padding: 14px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      flex: 1;
     }
 
+    /* Icon container - matches your styles.img_cell */
     .icon-container {
+      grid-area: i;
+      justify-self: end;
+      align-self: start;
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 100%;
       width: 50px;
       height: 50px;
-      border-radius: 50%;
-      background-color: var(--secondary-background-color, rgba(0,0,0,0.1));
+      background-color: var(--inactive-img-cell, rgba(0, 0, 0, 0.1));
       transition: background-color 0.3s ease;
     }
 
+    /* Icon - matches your styles.icon */
     .icon-container ha-icon {
-      --mdc-icon-size: 35px;
       width: 35px;
-      height: 35px;
+      --mdc-icon-size: 35px;
       color: var(--primary-text-color);
       transition: color 0.3s ease;
     }
 
-    .bottom-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding: 0 8px 4px 8px;
-    }
-
+    /* Sensors container - matches your custom_fields.temp positioning */
     .sensors {
+      grid-area: temp;
+      justify-self: start;
       display: flex;
       align-items: baseline;
       gap: 8px;
+      padding: 0 0 1px 14px;
     }
 
+    /* Temperature - matches your custom_fields.temp styles */
     .temp {
-      font-size: 18px;
+      font-size: 30px;
+      line-height: 30px;
       font-weight: 300;
       color: var(--primary-text-color);
     }
 
+    /* Humidity and Power - matches your inline styles in custom_fields.temp */
     .humidity,
     .power {
       font-size: 12px;
@@ -334,20 +334,43 @@ export class SensorDisplayCard extends LitElement {
       color: var(--secondary-text-color);
     }
 
+    /* Motion sensor - matches your custom_fields.motion_sensor */
     .motion {
+      grid-area: motion_sensor;
+      justify-self: end;
+      align-self: end;
       display: flex;
       align-items: center;
+      padding: 0 0 1px 2px;
+      margin: 0 3px 0 0;
     }
 
     .motion ha-icon {
-      --mdc-icon-size: 21px;
       width: 21px;
       height: 21px;
+      --mdc-icon-size: 21px;
+      transition: color 0.3s ease;
     }
 
     .motion ha-icon.motion-active {
-      color: var(--warning-color, #ffc107);
+      color: var(--warning-color, var(--warning, #ffc107));
       animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .unavailable {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--secondary-text-color);
+      font-style: italic;
+    }
+  `;
     }
 
     @keyframes pulse {
