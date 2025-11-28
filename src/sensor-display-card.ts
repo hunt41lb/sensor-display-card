@@ -1,4 +1,4 @@
-import { LitElement, html, TemplateResult, nothing, PropertyValues } from "lit";
+import { LitElement, html, TemplateResult, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { HomeAssistant, hasAction } from "custom-card-helpers";
 import { HassEntity } from "home-assistant-js-websocket";
@@ -11,7 +11,7 @@ import type { SensorDisplayCardConfig, ActionHandlerDetail } from "./types";
 import "./editor";
 
 // Card version for debugging
-const CARD_VERSION = "1.0.0";
+const CARD_VERSION = "1.0.1";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -50,22 +50,18 @@ export class SensorDisplayCard extends LitElement {
   public static getStubConfig(): Partial<SensorDisplayCardConfig> {
     return {
       type: "custom:sensor-display-card",
-      light_entity: "light.living_room",
-      name: "Living Room",
+      name: "New Sensor Card",
       icon: "mdi:lightbulb",
     };
   }
 
   /**
    * Called once when card configuration is set or changed
+   * All entities are now optional
    */
   public setConfig(config: SensorDisplayCardConfig): void {
     if (!config) {
       throw new Error("Invalid configuration");
-    }
-
-    if (!config.light_entity) {
-      throw new Error("You must define a light_entity");
     }
 
     this._config = {
@@ -97,41 +93,67 @@ export class SensorDisplayCard extends LitElement {
   private _updateStates(): void {
     if (!this._hass || !this._config) return;
 
-    // Light entity (required)
-    const light = this._hass.states[this._config.light_entity];
-    if (this._lightEntity !== light) {
-      this._lightEntity = light;
+    // Light entity (optional - using 'entity' as the key to match editor)
+    if (this._config.entity) {
+      const light = this._hass.states[this._config.entity];
+      if (this._lightEntity !== light) {
+        this._lightEntity = light;
+      }
+    } else {
+      if (this._lightEntity !== undefined) {
+        this._lightEntity = undefined;
+      }
     }
 
     // Temperature sensor (optional)
     if (this._config.temp_sensor) {
-      const temp = this._hass.states[this._config.temp_sensor]?.state;
+      const tempEntity = this._hass.states[this._config.temp_sensor];
+      const temp = tempEntity?.state;
       if (this._tempValue !== temp) {
         this._tempValue = temp;
+      }
+    } else {
+      if (this._tempValue !== undefined) {
+        this._tempValue = undefined;
       }
     }
 
     // Humidity sensor (optional)
     if (this._config.humidity_sensor) {
-      const humidity = this._hass.states[this._config.humidity_sensor]?.state;
+      const humidityEntity = this._hass.states[this._config.humidity_sensor];
+      const humidity = humidityEntity?.state;
       if (this._humidityValue !== humidity) {
         this._humidityValue = humidity;
+      }
+    } else {
+      if (this._humidityValue !== undefined) {
+        this._humidityValue = undefined;
       }
     }
 
     // Power sensor (optional)
     if (this._config.power_sensor) {
-      const power = this._hass.states[this._config.power_sensor]?.state;
+      const powerEntity = this._hass.states[this._config.power_sensor];
+      const power = powerEntity?.state;
       if (this._powerValue !== power) {
         this._powerValue = power;
+      }
+    } else {
+      if (this._powerValue !== undefined) {
+        this._powerValue = undefined;
       }
     }
 
     // Motion sensor (optional)
     if (this._config.motion_sensor) {
-      const motion = this._hass.states[this._config.motion_sensor]?.state === "on";
+      const motionEntity = this._hass.states[this._config.motion_sensor];
+      const motion = motionEntity?.state === "on";
       if (this._motionActive !== motion) {
         this._motionActive = motion;
+      }
+    } else {
+      if (this._motionActive !== false) {
+        this._motionActive = false;
       }
     }
   }
@@ -147,11 +169,15 @@ export class SensorDisplayCard extends LitElement {
 
     if (!actionConfig) return;
 
+    // Only dispatch action if we have an entity to act on
+    const targetEntity = this._config.entity;
+    if (!targetEntity) return;
+
     // Dispatch hass-action event for HA to handle
     const event = new Event("hass-action", { bubbles: true, composed: true });
     (event as any).detail = {
       config: {
-        entity: this._config.light_entity,
+        entity: targetEntity,
         tap_action: this._config.tap_action,
         hold_action: this._config.hold_action,
         double_tap_action: this._config.double_tap_action,
@@ -162,6 +188,17 @@ export class SensorDisplayCard extends LitElement {
   }
 
   /**
+   * Safely parse a numeric value
+   */
+  private _parseValue(value: string | undefined): string {
+    if (value === undefined || value === null || value === "unavailable" || value === "unknown") {
+      return "--";
+    }
+    const num = parseFloat(value);
+    return isNaN(num) ? "--" : num.toFixed(0);
+  }
+
+  /**
    * Render the card
    */
   protected render(): TemplateResult {
@@ -169,27 +206,32 @@ export class SensorDisplayCard extends LitElement {
       return html`<ha-card><div class="unavailable">Loading...</div></ha-card>`;
     }
 
-    if (!this._lightEntity) {
-      return html`
-        <ha-card>
-          <div class="unavailable">Entity not found: ${this._config.light_entity}</div>
-        </ha-card>
-      `;
-    }
-
-    const isOn = this._lightEntity.state === "on";
-    const rgbColor = this._lightEntity.attributes.rgb_color as [number, number, number] | undefined;
+    // Determine light state and RGB color (if light entity is configured)
+    const isOn = this._lightEntity?.state === "on";
+    const rgbColor = this._lightEntity?.attributes?.rgb_color as [number, number, number] | undefined;
 
     // Dynamic styles based on RGB color
-    const iconContainerStyle = rgbColor && isOn ? `background-color: rgba(${rgbColor.join(",")}, 0.2);` : "";
+    const iconContainerStyle = rgbColor && isOn 
+      ? `background-color: rgba(${rgbColor.join(",")}, 0.2);` 
+      : "";
 
-    const iconStyle = rgbColor && isOn ? `color: rgb(${rgbColor.join(",")});` : "";
+    const iconStyle = rgbColor && isOn 
+      ? `color: rgb(${rgbColor.join(",")});` 
+      : "";
 
-    // Card name: config name > friendly_name > entity_id
-    const name = this._config.name || this._lightEntity.attributes.friendly_name || this._config.light_entity;
+    // Card name: config name > friendly_name > entity_id > default
+    const name = this._config.name 
+      || this._lightEntity?.attributes?.friendly_name 
+      || this._config.entity 
+      || "Sensor Card";
 
     // Icon: config icon or default
     const icon = this._config.icon || "mdi:lightbulb";
+
+    // Check if we have any sensors to display
+    const hasSensors = this._tempValue !== undefined 
+      || this._humidityValue !== undefined 
+      || this._powerValue !== undefined;
 
     return html`
       <ha-card
@@ -211,13 +253,16 @@ export class SensorDisplayCard extends LitElement {
         <!-- Sensor Values -->
         <div class="sensors">
           ${this._tempValue !== undefined
-            ? html`<span class="sensor-temp">${parseFloat(this._tempValue).toFixed(0)}°</span>`
+            ? html`<span class="sensor-temp">${this._parseValue(this._tempValue)}°</span>`
             : nothing}
           ${this._humidityValue !== undefined
-            ? html`<span class="sensor-humidity">${parseFloat(this._humidityValue).toFixed(0)}%</span>`
+            ? html`<span class="sensor-humidity">${this._parseValue(this._humidityValue)}%</span>`
             : nothing}
           ${this._powerValue !== undefined
-            ? html`<span class="sensor-power">${parseFloat(this._powerValue).toFixed(0)}W</span>`
+            ? html`<span class="sensor-power">${this._parseValue(this._powerValue)}W</span>`
+            : nothing}
+          ${!hasSensors && !this._lightEntity
+            ? html`<span class="no-entities">Configure entities</span>`
             : nothing}
         </div>
 
@@ -274,11 +319,5 @@ window.customCards.push({
   name: "Sensor Display Card",
   description: "A card displaying RGB lights with temperature, humidity, power, and motion sensors",
   preview: true,
-  documentationURL: "https://github.com/YOURUSERNAME/sensor-display-card",
+  documentationURL: "https://github.com/hunt41lb/sensor-display-card",
 });
-
-declare global {
-  interface HTMLElementTagNameMap {
-    "sensor-display-card": SensorDisplayCard;
-  }
-}
