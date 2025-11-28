@@ -5,8 +5,8 @@ export interface SensorDisplayCardConfig extends LovelaceCardConfig {
   name?: string;
   icon?: string;
 
-  // Entity configurations
-  light_entity: string;
+  // Entity configurations - all optional
+  entity?: string;
   temp_sensor?: string;
   humidity_sensor?: string;
   power_sensor?: string;
@@ -42,13 +42,4 @@ declare global {
       documentationURL?: string;
     }>;
   }
-
-  interface HTMLElementTagNameMap {
-    "sensor-display-card": SensorDisplayCard;
-    "sensor-display-card-editor": SensorDisplayCardEditor;
-  }
 }
-
-// Forward declarations for the card classes
-export type SensorDisplayCard = HTMLElement;
-export type SensorDisplayCardEditor = HTMLElement;
