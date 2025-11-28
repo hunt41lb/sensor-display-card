@@ -12,6 +12,11 @@ export interface SensorDisplayCardConfig extends LovelaceCardConfig {
   power_sensor?: string;
   motion_sensor?: string;
 
+  // Display toggles - all default to true
+  show_name?: boolean;
+  show_icon?: boolean;
+  show_state?: boolean;
+
   // Layout
   grid_area?: string;
   view_layout?: {
