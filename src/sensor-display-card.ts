@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.4.3";
+const CARD_VERSION = "1.4.4";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -17,59 +17,17 @@ console.info(
 // EDITOR COMPONENT
 // ============================================================================
 const SCHEMA = [
-  {
-    type: "expandable",
-    name: "",
-    title: "Card Basics",
-    icon: "mdi:card-text",
-    schema: [
-      { name: "name", label: "Card Name", selector: { text: {} } },
-      { name: "icon", label: "Icon", selector: { icon: {} } },
-      { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
-    ],
-  },
-  {
-    type: "expandable",
-    name: "",
-    title: "Toggles",
-    icon: "mdi:toggle-switch",
-    schema: [
-      {
-        type: "grid",
-        name: "",
-        schema: [
-          { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
-          { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
-        ],
-      },
-      { name: "show_state", label: "Show State (On/Off)", selector: { boolean: {} }, default: false },
-    ],
-  },
-  {
-    type: "expandable",
-    name: "",
-    title: "Entities",
-    icon: "mdi:lightning-bolt",
-    schema: [
-      {
-        type: "grid",
-        name: "",
-        schema: [
-          { name: "entity", label: "Light Entity", selector: { entity: { domain: "light" } } },
-          { name: "temp_sensor", label: "Temperature Sensor", selector: { entity: { domain: "sensor" } } },
-        ],
-      },
-      {
-        type: "grid",
-        name: "",
-        schema: [
-          { name: "humidity_sensor", label: "Humidity Sensor", selector: { entity: { domain: "sensor" } } },
-          { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
-        ],
-      },
-      { name: "motion_sensor", label: "Motion Sensor", selector: { entity: { domain: "binary_sensor" } } },
-    ],
-  },
+  { name: "name", label: "Card Name", selector: { text: {} } },
+  { name: "icon", label: "Icon", selector: { icon: {} } },
+  { name: "entity", label: "Light Entity", selector: { entity: { domain: "light" } } },
+  { name: "temp_sensor", label: "Temperature Sensor", selector: { entity: { domain: "sensor" } } },
+  { name: "humidity_sensor", label: "Humidity Sensor", selector: { entity: { domain: "sensor" } } },
+  { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
+  { name: "motion_sensor", label: "Motion Sensor", selector: { entity: { domain: "binary_sensor" } } },
+  { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
+  { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
+  { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
+  { name: "show_state", label: "Show State (On/Off)", selector: { boolean: {} }, default: false },
 ];
 
 @customElement("sensor-display-card-editor")
@@ -137,12 +95,12 @@ export class SensorDisplayCard extends LitElement {
       show_state: false,
       ...config,
     };
-    
+
     // Apply grid-area to host element if configured
     if (this._config.grid_area) {
       this.style.gridArea = this._config.grid_area;
     }
-    
+
     // Also support view_layout for layout-card compatibility
     if (this._config.view_layout?.["grid-area"]) {
       this.style.gridArea = this._config.view_layout["grid-area"];
@@ -169,14 +127,14 @@ export class SensorDisplayCard extends LitElement {
 
   private _handleClick(): void {
     if (!this.hass || !this._config?.entity) return;
-    
+
     const entityId = this._config.entity;
     this.hass.callService("light", "toggle", { entity_id: entityId });
   }
 
   private _handleMoreInfo(): void {
     if (!this._config?.entity) return;
-    
+
     const event = new CustomEvent("hass-more-info", {
       bubbles: true,
       composed: true,
@@ -187,7 +145,7 @@ export class SensorDisplayCard extends LitElement {
 
   protected updated(changedProps: Map<string, unknown>): void {
     super.updated(changedProps);
-    
+
     // Ensure grid-area is applied when config changes
     if (this._config?.grid_area) {
       this.style.gridArea = this._config.grid_area;
@@ -200,20 +158,20 @@ export class SensorDisplayCard extends LitElement {
     }
 
     // Get entity states
-    const lightEntity: HassEntity | undefined = this._config.entity 
-      ? this.hass.states[this._config.entity] 
+    const lightEntity: HassEntity | undefined = this._config.entity
+      ? this.hass.states[this._config.entity]
       : undefined;
-    const tempEntity = this._config.temp_sensor 
-      ? this.hass.states[this._config.temp_sensor] 
+    const tempEntity = this._config.temp_sensor
+      ? this.hass.states[this._config.temp_sensor]
       : undefined;
-    const humidityEntity = this._config.humidity_sensor 
-      ? this.hass.states[this._config.humidity_sensor] 
+    const humidityEntity = this._config.humidity_sensor
+      ? this.hass.states[this._config.humidity_sensor]
       : undefined;
-    const powerEntity = this._config.power_sensor 
-      ? this.hass.states[this._config.power_sensor] 
+    const powerEntity = this._config.power_sensor
+      ? this.hass.states[this._config.power_sensor]
       : undefined;
-    const motionEntity = this._config.motion_sensor 
-      ? this.hass.states[this._config.motion_sensor] 
+    const motionEntity = this._config.motion_sensor
+      ? this.hass.states[this._config.motion_sensor]
       : undefined;
 
     // Determine states
@@ -222,20 +180,20 @@ export class SensorDisplayCard extends LitElement {
     const motionActive = motionEntity?.state === "on";
 
     // Card name
-    const name = this._config.name 
-      || lightEntity?.attributes?.friendly_name 
-      || this._config.entity 
+    const name = this._config.name
+      || lightEntity?.attributes?.friendly_name
+      || this._config.entity
       || "Sensor Card";
 
     // Icon
     const icon = this._config.icon || "mdi:lightbulb";
 
     // Dynamic styles for RGB
-    const iconBgStyle = rgbColor && isOn 
-      ? `background-color: rgba(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]}, 0.2)` 
+    const iconBgStyle = rgbColor && isOn
+      ? `background-color: rgba(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]}, 0.2)`
       : "";
-    const iconColorStyle = rgbColor && isOn 
-      ? `color: rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})` 
+    const iconColorStyle = rgbColor && isOn
+      ? `color: rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`
       : "";
 
     // Show toggles (default to true for name/icon, false for state)
@@ -244,40 +202,40 @@ export class SensorDisplayCard extends LitElement {
     const showState = this._config.show_state === true;
 
     // State text
-    const stateText = lightEntity 
-      ? (isOn ? "On" : "Off") 
+    const stateText = lightEntity
+      ? (isOn ? "On" : "Off")
       : "";
 
     return html`
-      <ha-card 
+      <ha-card
         class="${isOn ? "state-on" : "state-off"}"
         @click=${this._handleClick}
         @dblclick=${this._handleMoreInfo}
       >
         <!-- Name -->
-        ${showName 
-          ? html`<div class="name">${name}${showState && stateText ? html` <span class="state-text">${stateText}</span>` : nothing}</div>` 
+        ${showName
+          ? html`<div class="name">${name}${showState && stateText ? html` <span class="state-text">${stateText}</span>` : nothing}</div>`
           : html`<div class="name"></div>`}
 
         <!-- Icon Container (img_cell) -->
-        ${showIcon 
+        ${showIcon
           ? html`
               <div class="icon-container" style="${iconBgStyle}">
                 <ha-icon .icon=${icon} style="${iconColorStyle}"></ha-icon>
               </div>
-            ` 
+            `
           : html`<div class="icon-container hidden"></div>`}
 
         <!-- Sensors (temp area) -->
         <div class="sensors">
-          ${tempEntity 
-            ? html`<span class="temp">${this._parseValue(tempEntity.state)}°</span>` 
+          ${tempEntity
+            ? html`<span class="temp">${this._parseValue(tempEntity.state)}°</span>`
             : nothing}
-          ${humidityEntity 
-            ? html`<span class="humidity">${this._parseValue(humidityEntity.state)}%</span>` 
+          ${humidityEntity
+            ? html`<span class="humidity">${this._parseValue(humidityEntity.state)}%</span>`
             : nothing}
-          ${powerEntity 
-            ? html`<span class="power">${this._parseValue(powerEntity.state)}W</span>` 
+          ${powerEntity
+            ? html`<span class="power">${this._parseValue(powerEntity.state)}W</span>`
             : nothing}
           ${!tempEntity && !humidityEntity && !powerEntity && !lightEntity
             ? html`<span class="placeholder">Configure entities</span>`
@@ -286,8 +244,8 @@ export class SensorDisplayCard extends LitElement {
 
         <!-- Motion Sensor -->
         <div class="motion">
-          ${motionActive 
-            ? html`<ha-icon class="motion-active" icon="mdi:motion-sensor"></ha-icon>` 
+          ${motionActive
+            ? html`<ha-icon class="motion-active" icon="mdi:motion-sensor"></ha-icon>`
             : nothing}
         </div>
       </ha-card>
@@ -360,7 +318,7 @@ export class SensorDisplayCard extends LitElement {
       width: 50px;
       height: 50px;
       background-color: var(--inactive-img-cell, rgba(0, 0, 0, 0.1));
-      transition: background-color 0.3s ease;
+      transition: background-color 1.2s ease;
     }
 
     .icon-container.hidden {
@@ -387,8 +345,8 @@ export class SensorDisplayCard extends LitElement {
 
     /* Temperature - matches your custom_fields.temp styles */
     .temp {
-      font-size: 30px;
-      line-height: 30px;
+      font-size: 16px;
+      line-height: 16px;
       font-weight: 300;
       color: var(--primary-text-color);
     }
@@ -423,11 +381,11 @@ export class SensorDisplayCard extends LitElement {
       width: 21px;
       height: 21px;
       --mdc-icon-size: 21px;
-      transition: color 0.3s ease;
+      transition: color 1.2s ease;
     }
 
     .motion ha-icon.motion-active {
-      color: var(--warning-color, var(--warning, #ffc107));
+      color: var(--state-active-color, var(--state-active-color, #ffc107));
       animation: pulse 1.5s ease-in-out infinite;
     }
 
