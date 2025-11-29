@@ -1,11 +1,12 @@
 import { LitElement, html, css, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { HomeAssistant, fireEvent } from "custom-card-helpers";
+import { HomeAssistant, fireEvent, hasAction, ActionConfig } from "custom-card-helpers";
 import { HassEntity } from "home-assistant-js-websocket";
-import type { SensorDisplayCardConfig } from "./types";
+import type { SensorDisplayCardConfig, ActionHandlerDetail } from "./types";
+import { actionHandler } from "./action-handler-directive";
 
 // Card version for debugging
-const CARD_VERSION = "1.4.4";
+const CARD_VERSION = "1.5.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -28,6 +29,9 @@ const SCHEMA = [
   { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
   { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
   { name: "show_state", label: "Show State (On/Off)", selector: { boolean: {} }, default: false },
+  { name: "tap_action", label: "Tap Action", selector: { "ui-action": {} } },
+  { name: "hold_action", label: "Hold Action", selector: { "ui-action": {} } },
+  { name: "double_tap_action", label: "Double Tap Action", selector: { "ui-action": {} } },
 ];
 
 @customElement("sensor-display-card-editor")
@@ -93,6 +97,9 @@ export class SensorDisplayCard extends LitElement {
       show_name: true,
       show_icon: true,
       show_state: false,
+      tap_action: { action: "toggle" },
+      hold_action: { action: "more-info" },
+      double_tap_action: { action: "more-info" },
       ...config,
     };
 
@@ -125,22 +132,70 @@ export class SensorDisplayCard extends LitElement {
     return isNaN(num) ? "--" : num.toFixed(0);
   }
 
-  private _handleClick(): void {
-    if (!this.hass || !this._config?.entity) return;
+  /**
+   * Handle action events from the action handler directive
+   */
+  private _handleAction(ev: CustomEvent<ActionHandlerDetail>): void {
+    if (!this.hass || !this._config) return;
 
-    const entityId = this._config.entity;
-    this.hass.callService("light", "toggle", { entity_id: entityId });
-  }
+    const action = ev.detail.action;
+    const actionConfig = this._config[`${action}_action`] as ActionConfig | undefined;
 
-  private _handleMoreInfo(): void {
-    if (!this._config?.entity) return;
+    if (!actionConfig || actionConfig.action === "none") return;
 
-    const event = new CustomEvent("hass-more-info", {
-      bubbles: true,
-      composed: true,
-      detail: { entityId: this._config.entity },
-    });
-    this.dispatchEvent(event);
+    switch (actionConfig.action) {
+      case "toggle":
+        if (this._config.entity) {
+          this.hass.callService("homeassistant", "toggle", {
+            entity_id: this._config.entity,
+          });
+        }
+        break;
+
+      case "more-info":
+        if (this._config.entity || actionConfig.entity) {
+          const event = new CustomEvent("hass-more-info", {
+            bubbles: true,
+            composed: true,
+            detail: { entityId: actionConfig.entity || this._config.entity },
+          });
+          this.dispatchEvent(event);
+        }
+        break;
+
+      case "navigate":
+        if (actionConfig.navigation_path) {
+          history.pushState(null, "", actionConfig.navigation_path);
+          const navEvent = new Event("location-changed", {
+            bubbles: true,
+            composed: true,
+          });
+          this.dispatchEvent(navEvent);
+        }
+        break;
+
+      case "url":
+        if (actionConfig.url_path) {
+          window.open(actionConfig.url_path, "_blank");
+        }
+        break;
+
+      case "call-service":
+        if (actionConfig.service) {
+          const [domain, service] = actionConfig.service.split(".");
+          this.hass.callService(
+            domain,
+            service,
+            actionConfig.service_data || {},
+            actionConfig.target
+          );
+        }
+        break;
+
+      case "fire-dom-event":
+        fireEvent(this, "ll-custom", actionConfig);
+        break;
+    }
   }
 
   protected updated(changedProps: Map<string, unknown>): void {
@@ -209,8 +264,11 @@ export class SensorDisplayCard extends LitElement {
     return html`
       <ha-card
         class="${isOn ? "state-on" : "state-off"}"
-        @click=${this._handleClick}
-        @dblclick=${this._handleMoreInfo}
+        @action=${this._handleAction}
+        .actionHandler=${actionHandler({
+          hasHold: hasAction(this._config.hold_action),
+          hasDoubleClick: hasAction(this._config.double_tap_action),
+        })}
       >
         <!-- Name -->
         ${showName
