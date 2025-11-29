@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.4.0";
+const CARD_VERSION = "1.4.3";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -17,17 +17,59 @@ console.info(
 // EDITOR COMPONENT
 // ============================================================================
 const SCHEMA = [
-  { name: "name", label: "Card Name", selector: { text: {} } },
-  { name: "icon", label: "Icon", selector: { icon: {} } },
-  { name: "entity", label: "Light Entity", selector: { entity: { domain: "light" } } },
-  { name: "temp_sensor", label: "Temperature Sensor", selector: { entity: { domain: "sensor" } } },
-  { name: "humidity_sensor", label: "Humidity Sensor", selector: { entity: { domain: "sensor" } } },
-  { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
-  { name: "motion_sensor", label: "Motion Sensor", selector: { entity: { domain: "binary_sensor" } } },
-  { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
-  { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
-  { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
-  { name: "show_state", label: "Show State (On/Off)", selector: { boolean: {} }, default: false },
+  {
+    type: "expandable",
+    name: "",
+    title: "Card Basics",
+    icon: "mdi:card-text",
+    schema: [
+      { name: "name", label: "Card Name", selector: { text: {} } },
+      { name: "icon", label: "Icon", selector: { icon: {} } },
+      { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
+    ],
+  },
+  {
+    type: "expandable",
+    name: "",
+    title: "Toggles",
+    icon: "mdi:toggle-switch",
+    schema: [
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
+          { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
+        ],
+      },
+      { name: "show_state", label: "Show State (On/Off)", selector: { boolean: {} }, default: false },
+    ],
+  },
+  {
+    type: "expandable",
+    name: "",
+    title: "Entities",
+    icon: "mdi:lightning-bolt",
+    schema: [
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          { name: "entity", label: "Light Entity", selector: { entity: { domain: "light" } } },
+          { name: "temp_sensor", label: "Temperature Sensor", selector: { entity: { domain: "sensor" } } },
+        ],
+      },
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          { name: "humidity_sensor", label: "Humidity Sensor", selector: { entity: { domain: "sensor" } } },
+          { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
+        ],
+      },
+      { name: "motion_sensor", label: "Motion Sensor", selector: { entity: { domain: "binary_sensor" } } },
+    ],
+  },
 ];
 
 @customElement("sensor-display-card-editor")
