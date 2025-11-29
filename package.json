@@ -1,6 +1,6 @@
 {
   "name": "sensor-display-card",
-  "version": "1.0.0",
+  "version": "1.4.1",
   "description": "Home Assistant custom card displaying RGB lights with temperature, humidity, power, and motion sensors",
   "main": "dist/sensor-display-card.js",
   "scripts": {
