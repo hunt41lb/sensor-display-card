@@ -30,6 +30,16 @@ export interface SensorDisplayCardConfig extends LovelaceCardConfig {
   double_tap_action?: ActionConfig;
 }
 
+export interface ActionHandlerDetail {
+  action: "tap" | "hold" | "double_tap";
+}
+
+export interface ActionHandlerOptions {
+  hasHold?: boolean;
+  hasDoubleClick?: boolean;
+  disabled?: boolean;
+}
+
 // Extend Window interface for custom card registration
 declare global {
   interface Window {
