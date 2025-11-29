@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.5.1";
+const CARD_VERSION = "1.6.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -19,7 +19,7 @@ console.info(
 const SCHEMA = [
   { name: "name", label: "Card Name", selector: { text: {} } },
   { name: "icon", label: "Icon", selector: { icon: {} } },
-  { name: "entity", label: "Light Entity", selector: { entity: { domain: "light" } } },
+  { name: "entity", label: "Entity", selector: { entity: {} } },
   { name: "temp_sensor", label: "Temperature Sensor", selector: { entity: { domain: "sensor" } } },
   { name: "humidity_sensor", label: "Humidity Sensor", selector: { entity: { domain: "sensor" } } },
   { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
@@ -129,6 +129,84 @@ export class SensorDisplayCard extends LitElement {
     }
     const num = parseFloat(value);
     return isNaN(num) ? "--" : num.toFixed(0);
+  }
+
+  /**
+   * Determine if an entity is in an "active" state based on its domain
+   */
+  private _isEntityActive(entity: HassEntity | undefined): boolean {
+    if (!entity) return false;
+
+    const state = entity.state;
+    const domain = entity.entity_id.split(".")[0];
+
+    // Handle unavailable/unknown states
+    if (state === "unavailable" || state === "unknown") return false;
+
+    switch (domain) {
+      case "light":
+      case "switch":
+      case "fan":
+      case "input_boolean":
+      case "automation":
+      case "script":
+      case "binary_sensor":
+        return state === "on";
+
+      case "cover":
+        return state === "open" || state === "opening";
+
+      case "lock":
+        return state === "unlocked" || state === "unlocking";
+
+      case "media_player":
+        return state === "playing" || state === "paused" || state === "on" || state === "idle";
+
+      case "climate":
+        return state !== "off";
+
+      case "vacuum":
+        return state === "cleaning" || state === "returning";
+
+      case "person":
+      case "device_tracker":
+        return state === "home";
+
+      default:
+        // For unknown domains, "on" is active
+        return state === "on";
+    }
+  }
+
+  /**
+   * Get display text for entity state
+   */
+  private _getStateText(entity: HassEntity | undefined): string {
+    if (!entity) return "";
+
+    const state = entity.state;
+    const domain = entity.entity_id.split(".")[0];
+
+    // Capitalize first letter for display
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    switch (domain) {
+      case "cover":
+        return capitalize(state); // Open, Closed, Opening, Closing
+      case "lock":
+        return capitalize(state); // Locked, Unlocked
+      case "media_player":
+        return capitalize(state); // Playing, Paused, Idle, Off
+      case "climate":
+        return capitalize(state); // Heat, Cool, Auto, Off
+      case "vacuum":
+        return capitalize(state); // Cleaning, Returning, Docked
+      case "person":
+      case "device_tracker":
+        return capitalize(state); // Home, Away, etc.
+      default:
+        return this._isEntityActive(entity) ? "On" : "Off";
+    }
   }
 
   // Action handling state
@@ -255,7 +333,7 @@ export class SensorDisplayCard extends LitElement {
     }
 
     // Get entity states
-    const lightEntity: HassEntity | undefined = this._config.entity
+    const primaryEntity: HassEntity | undefined = this._config.entity
       ? this.hass.states[this._config.entity]
       : undefined;
     const tempEntity = this._config.temp_sensor
@@ -271,21 +349,23 @@ export class SensorDisplayCard extends LitElement {
       ? this.hass.states[this._config.motion_sensor]
       : undefined;
 
-    // Determine states
-    const isOn = lightEntity?.state === "on";
-    const rgbColor = lightEntity?.attributes?.rgb_color as [number, number, number] | undefined;
+    // Determine states using domain-aware helper
+    const isOn = this._isEntityActive(primaryEntity);
     const motionActive = motionEntity?.state === "on";
+
+    // RGB color (only applies to lights)
+    const rgbColor = primaryEntity?.attributes?.rgb_color as [number, number, number] | undefined;
 
     // Card name
     const name = this._config.name
-      || lightEntity?.attributes?.friendly_name
+      || primaryEntity?.attributes?.friendly_name
       || this._config.entity
       || "Sensor Card";
 
     // Icon
     const icon = this._config.icon || "mdi:lightbulb";
 
-    // Dynamic styles for RGB
+    // Dynamic styles for RGB (only for lights with rgb_color)
     const iconBgStyle = rgbColor && isOn
       ? `background-color: rgba(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]}, 0.2)`
       : "";
@@ -298,10 +378,8 @@ export class SensorDisplayCard extends LitElement {
     const showIcon = this._config.show_icon !== false;
     const showState = this._config.show_state === true;
 
-    // State text
-    const stateText = lightEntity
-      ? (isOn ? "On" : "Off")
-      : "";
+    // State text using domain-aware helper
+    const stateText = this._getStateText(primaryEntity);
 
     return html`
       <ha-card
@@ -336,7 +414,7 @@ export class SensorDisplayCard extends LitElement {
           ${powerEntity
             ? html`<span class="power">${this._parseValue(powerEntity.state)}W</span>`
             : nothing}
-          ${!tempEntity && !humidityEntity && !powerEntity && !lightEntity
+          ${!tempEntity && !humidityEntity && !powerEntity && !primaryEntity
             ? html`<span class="placeholder">Configure entities</span>`
             : nothing}
         </div>
