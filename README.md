@@ -25,13 +25,13 @@ A custom Home Assistant Lovelace card that displays RGB lights with temperature,
 1. Open HACS in your Home Assistant instance
 2. Click on "Frontend"
 3. Click the three dots menu and select "Custom repositories"
-4. Add `https://github.com/YOURUSERNAME/sensor-display-card` with category "Lovelace"
+4. Add `https://github.com/hunt41lb/sensor-display-card` with category "Lovelace"
 5. Click "Install"
 6. Restart Home Assistant
 
 ### Manual Installation
 
-1. Download `sensor-display-card.js` from the [latest release](https://github.com/YOURUSERNAME/sensor-display-card/releases)
+1. Download `sensor-display-card.js` from the [latest release](https://github.com/hunt41lb/sensor-display-card/releases)
 2. Copy it to `config/www/sensor-display-card.js`
 3. Add the resource in your Lovelace configuration:
 
@@ -112,7 +112,7 @@ tap_action:
 ### Setup
 
 ```bash
-git clone https://github.com/YOURUSERNAME/sensor-display-card.git
+git clone https://github.com/hunt41lb/sensor-display-card.git
 cd sensor-display-card
 npm install
 ```
