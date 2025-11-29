@@ -2,11 +2,10 @@ import { LitElement, html, css, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { HomeAssistant, fireEvent, hasAction, ActionConfig } from "custom-card-helpers";
 import { HassEntity } from "home-assistant-js-websocket";
-import type { SensorDisplayCardConfig, ActionHandlerDetail } from "./types";
-import { actionHandler } from "./action-handler-directive";
+import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.5.0";
+const CARD_VERSION = "1.5.1";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -132,14 +131,57 @@ export class SensorDisplayCard extends LitElement {
     return isNaN(num) ? "--" : num.toFixed(0);
   }
 
+  // Action handling state
+  private _holdTimeout?: ReturnType<typeof setTimeout>;
+  private _dblClickTimeout?: ReturnType<typeof setTimeout>;
+  private _held = false;
+
+  private _handlePointerDown(): void {
+    this._held = false;
+    if (hasAction(this._config?.hold_action)) {
+      this._holdTimeout = setTimeout(() => {
+        this._held = true;
+        this._executeAction("hold");
+      }, 500);
+    }
+  }
+
+  private _handlePointerUp(): void {
+    if (this._holdTimeout) {
+      clearTimeout(this._holdTimeout);
+      this._holdTimeout = undefined;
+    }
+  }
+
+  private _handleClick(): void {
+    if (this._held) {
+      this._held = false;
+      return;
+    }
+
+    if (hasAction(this._config?.double_tap_action)) {
+      if (this._dblClickTimeout) {
+        clearTimeout(this._dblClickTimeout);
+        this._dblClickTimeout = undefined;
+        this._executeAction("double_tap");
+      } else {
+        this._dblClickTimeout = setTimeout(() => {
+          this._dblClickTimeout = undefined;
+          this._executeAction("tap");
+        }, 250);
+      }
+    } else {
+      this._executeAction("tap");
+    }
+  }
+
   /**
-   * Handle action events from the action handler directive
+   * Execute the configured action
    */
-  private _handleAction(ev: CustomEvent<ActionHandlerDetail>): void {
+  private _executeAction(actionType: "tap" | "hold" | "double_tap"): void {
     if (!this.hass || !this._config) return;
 
-    const action = ev.detail.action;
-    const actionConfig = this._config[`${action}_action`] as ActionConfig | undefined;
+    const actionConfig = this._config[`${actionType}_action`] as ActionConfig | undefined;
 
     if (!actionConfig || actionConfig.action === "none") return;
 
@@ -264,11 +306,10 @@ export class SensorDisplayCard extends LitElement {
     return html`
       <ha-card
         class="${isOn ? "state-on" : "state-off"}"
-        @action=${this._handleAction}
-        .actionHandler=${actionHandler({
-          hasHold: hasAction(this._config.hold_action),
-          hasDoubleClick: hasAction(this._config.double_tap_action),
-        })}
+        @pointerdown=${this._handlePointerDown}
+        @pointerup=${this._handlePointerUp}
+        @pointercancel=${this._handlePointerUp}
+        @click=${this._handleClick}
       >
         <!-- Name -->
         ${showName
