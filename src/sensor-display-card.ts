@@ -499,7 +499,8 @@ export class SensorDisplayCard extends LitElement {
     }
 
     ha-card.state-off {
-      background-color: var(--ha-card-background-inactive, var(--ha-card-background));
+      background-color: var(--ha-card-background);
+      opacity: 0.6;
     }
 
     /* Name - matches your styles.name */
