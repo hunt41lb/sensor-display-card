@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.6.0";
+const CARD_VERSION = "1.7.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -24,6 +24,9 @@ const SCHEMA = [
   { name: "humidity_sensor", label: "Humidity Sensor", selector: { entity: { domain: "sensor" } } },
   { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
   { name: "motion_sensor", label: "Motion Sensor", selector: { entity: { domain: "binary_sensor" } } },
+  { name: "pet_sensor", label: "Pet Sensor", selector: { entity: { domain: "binary_sensor" } } },
+  { name: "person_sensor", label: "Person Sensor", selector: { entity: { domain: "binary_sensor" } } },
+  { name: "vehicle_sensor", label: "Vehicle Sensor", selector: { entity: { domain: "binary_sensor" } } },
   { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
   { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
   { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
@@ -345,13 +348,29 @@ export class SensorDisplayCard extends LitElement {
     const powerEntity = this._config.power_sensor
       ? this.hass.states[this._config.power_sensor]
       : undefined;
+
+    // Binary sensors
     const motionEntity = this._config.motion_sensor
       ? this.hass.states[this._config.motion_sensor]
+      : undefined;
+    const petEntity = this._config.pet_sensor
+      ? this.hass.states[this._config.pet_sensor]
+      : undefined;
+    const personEntity = this._config.person_sensor
+      ? this.hass.states[this._config.person_sensor]
+      : undefined;
+    const vehicleEntity = this._config.vehicle_sensor
+      ? this.hass.states[this._config.vehicle_sensor]
       : undefined;
 
     // Determine states using domain-aware helper
     const isOn = this._isEntityActive(primaryEntity);
+
+    // Binary sensor states
     const motionActive = motionEntity?.state === "on";
+    const petActive = petEntity?.state === "on";
+    const personActive = personEntity?.state === "on";
+    const vehicleActive = vehicleEntity?.state === "on";
 
     // RGB color (only applies to lights)
     const rgbColor = primaryEntity?.attributes?.rgb_color as [number, number, number] | undefined;
@@ -419,10 +438,31 @@ export class SensorDisplayCard extends LitElement {
             : nothing}
         </div>
 
-        <!-- Motion Sensor -->
-        <div class="motion">
-          ${motionActive
-            ? html`<ha-icon class="motion-active" icon="mdi:motion-sensor"></ha-icon>`
+        <!-- Binary Sensors Row -->
+        <div class="binary-sensors">
+          ${personEntity
+            ? html`<ha-icon
+                class="binary-sensor ${personActive ? "active" : "inactive"}"
+                icon="${personActive ? "mdi:account" : "mdi:account-off"}"
+              ></ha-icon>`
+            : nothing}
+          ${petEntity
+            ? html`<ha-icon
+                class="binary-sensor ${petActive ? "active" : "inactive"}"
+                icon="${petActive ? "mdi:paw" : "mdi:paw-off"}"
+              ></ha-icon>`
+            : nothing}
+          ${vehicleEntity
+            ? html`<ha-icon
+                class="binary-sensor ${vehicleActive ? "active" : "inactive"}"
+                icon="${vehicleActive ? "mdi:car" : "mdi:car-off"}"
+              ></ha-icon>`
+            : nothing}
+          ${motionEntity
+            ? html`<ha-icon
+                class="binary-sensor ${motionActive ? "active" : "inactive"}"
+                icon="${motionActive ? "mdi:motion-sensor" : "mdi:motion-sensor-off"}"
+              ></ha-icon>`
             : nothing}
         </div>
       </ha-card>
@@ -443,7 +483,7 @@ export class SensorDisplayCard extends LitElement {
       display: grid;
       grid-template-areas:
         "n n i i"
-        "temp temp temp motion_sensor";
+        "temp temp temp sensors";
       grid-template-rows: 1fr min-content;
       grid-template-columns: min-content 1fr;
       padding: 6px;
@@ -543,27 +583,36 @@ export class SensorDisplayCard extends LitElement {
       color: var(--secondary-text-color);
     }
 
-    /* Motion sensor - matches your custom_fields.motion_sensor */
-    .motion {
-      grid-area: motion_sensor;
+    /* Binary sensors row - replaces single motion sensor */
+    .binary-sensors {
+      grid-area: sensors;
       justify-self: end;
       align-self: end;
       display: flex;
       align-items: center;
+      gap: 4px;
       padding: 0 0 1px 2px;
       margin: 0 3px 0 0;
     }
 
-    .motion ha-icon {
+    .binary-sensors .binary-sensor {
       width: 21px;
       height: 21px;
       --mdc-icon-size: 21px;
-      transition: color 1.2s ease;
+      transition: color 0.3s ease, opacity 0.3s ease;
     }
 
-    .motion ha-icon.motion-active {
-      color: var(--state-active-color, var(--state-active-color, #ffc107));
+    .binary-sensors .binary-sensor.active {
+      color: var(--state-binary_sensor-active-color, var(--state-active-color, #ffc107));
       animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .binary-sensors .binary-sensor.inactive {
+      color: transparent;
+      opacity: 0;
+      width: 0;
+      margin: 0;
+      overflow: hidden;
     }
 
     @keyframes pulse {
