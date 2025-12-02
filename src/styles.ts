@@ -54,7 +54,7 @@ export const styles = css`
     border-radius: 100%;
     width: 50px;
     height: 50px;
-    background-color: var(--inactive-img-cell, rgba(0, 0, 0, 0.1));
+    background-color: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
     transition: background-color 0.3s ease;
   }
 
