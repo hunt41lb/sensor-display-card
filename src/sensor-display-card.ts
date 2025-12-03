@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.9.0";
+const CARD_VERSION = "2.0.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -29,6 +29,7 @@ const SCHEMA = [
   { name: "vehicle_sensor", label: "Vehicle Sensor", selector: { entity: { domain: "binary_sensor" } } },
   { name: "door_sensor", label: "Door Sensor", selector: { entity: { domain: "binary_sensor" } } },
   { name: "window_sensor", label: "Window Sensor", selector: { entity: { domain: "binary_sensor" } } },
+  { name: "lock_entity", label: "Lock/Deadbolt", selector: { entity: { domain: "lock" } } },
   { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
   { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
   { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
@@ -199,6 +200,59 @@ export class SensorDisplayCard extends LitElement {
     if (!entity) return false;
     const state = entity.state;
     return state === "on" || state === "Window/door is open";
+  }
+
+  /**
+   * Get lock icon based on state
+   */
+  private _getLockIcon(entity: HassEntity | undefined): string {
+    if (!entity) return "mdi:shield-lock";
+    const state = entity.state;
+    
+    switch (state) {
+      case "locked":
+      case "locking":
+        return "mdi:shield-lock";
+      case "unlocked":
+      case "unlocking":
+      case "open":
+      case "opening":
+        return "mdi:shield-lock-open";
+      case "jammed":
+      case "unavailable":
+      case "unknown":
+      default:
+        return "mdi:shield-alert";
+    }
+  }
+
+  /**
+   * Get lock color CSS variable based on state
+   */
+  private _getLockColorVar(entity: HassEntity | undefined): string {
+    if (!entity) return "var(--state-lock-locked-color, var(--primary-text-color))";
+    const state = entity.state;
+    
+    switch (state) {
+      case "locked":
+        return "var(--state-lock-locked-color, var(--success-color, #4caf50))";
+      case "locking":
+        return "var(--state-lock-locking-color, var(--info-color, #2196f3))";
+      case "unlocked":
+        return "var(--state-lock-unlocked-color, var(--warning-color, #ff9800))";
+      case "unlocking":
+        return "var(--state-lock-unlocking-color, var(--info-color, #2196f3))";
+      case "open":
+        return "var(--state-lock-open-color, var(--warning-color, #ff9800))";
+      case "opening":
+        return "var(--state-lock-opening-color, var(--info-color, #2196f3))";
+      case "jammed":
+        return "var(--state-lock-jammed-color, var(--error-color, #f44336))";
+      case "unavailable":
+      case "unknown":
+      default:
+        return "var(--error-color, #f44336)";
+    }
   }
 
   /**
@@ -388,6 +442,9 @@ export class SensorDisplayCard extends LitElement {
     const windowEntity = this._config.window_sensor
       ? this.hass.states[this._config.window_sensor]
       : undefined;
+    const lockEntity = this._config.lock_entity
+      ? this.hass.states[this._config.lock_entity]
+      : undefined;
 
     // Determine states using domain-aware helper
     const isOn = this._isEntityActive(primaryEntity);
@@ -399,6 +456,10 @@ export class SensorDisplayCard extends LitElement {
     const vehicleActive = vehicleEntity?.state === "on";
     const doorOpen = this._isDoorOpen(doorEntity);
     const windowOpen = this._isWindowOpen(windowEntity);
+    
+    // Lock state
+    const lockIcon = this._getLockIcon(lockEntity);
+    const lockColor = this._getLockColorVar(lockEntity);
 
     // RGB color (only applies to lights)
     const rgbColor = primaryEntity?.attributes?.rgb_color as [number, number, number] | undefined;
@@ -468,6 +529,13 @@ export class SensorDisplayCard extends LitElement {
 
         <!-- Binary Sensors Row -->
         <div class="binary-sensors">
+          ${lockEntity
+            ? html`<ha-icon
+                class="lock-icon"
+                icon="${lockIcon}"
+                style="color: ${lockColor};"
+              ></ha-icon>`
+            : nothing}
           ${doorEntity
             ? html`<ha-icon
                 class="binary-sensor ${doorOpen ? "active" : "inactive"}"
@@ -654,6 +722,14 @@ export class SensorDisplayCard extends LitElement {
       width: 0;
       margin: 0;
       overflow: hidden;
+    }
+
+    /* Lock icon - always visible, slightly larger */
+    .binary-sensors .lock-icon {
+      width: 24px;
+      height: 24px;
+      --mdc-icon-size: 24px;
+      transition: color 0.3s ease;
     }
 
     @keyframes pulse {
