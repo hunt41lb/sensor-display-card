@@ -10,7 +10,7 @@ export interface SensorDisplayCardConfig extends LovelaceCardConfig {
   temp_sensor?: string;
   humidity_sensor?: string;
   power_sensor?: string;
-  
+
   // Binary sensor configurations
   motion_sensor?: string;
   pet_sensor?: string;
