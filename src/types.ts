@@ -22,6 +22,23 @@ export interface SensorDisplayCardConfig extends LovelaceCardConfig {
   // Lock entity configuration
   lock_entity?: string;
 
+  // Appearance options
+  card_height?: "compact" | "default" | "tall" | number;
+  card_width?: "auto" | "full" | number;
+  icon_size?: "small" | "default" | "large";
+
+  // Custom colors (defaults to HA theme CSS variables)
+  icon_color?: string;
+  icon_color_active?: string;
+  icon_background_color?: string;
+  icon_background_color_active?: string;
+  name_color?: string;
+  sensor_text_color?: string;
+  active_sensor_color?: string;
+  card_background_color?: string;
+  card_background_color_active?: string;
+  card_border_color?: string;
+
   // Display toggles - all default to true
   show_name?: boolean;
   show_icon?: boolean;
