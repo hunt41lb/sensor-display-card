@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "2.0.0";
+const CARD_VERSION = "2.1.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -17,26 +17,198 @@ console.info(
 // EDITOR COMPONENT
 // ============================================================================
 const SCHEMA = [
-  { name: "name", label: "Card Name", selector: { text: {} } },
-  { name: "icon", label: "Icon", selector: { icon: {} } },
-  { name: "entity", label: "Entity", selector: { entity: {} } },
-  { name: "temp_sensor", label: "Temperature Sensor", selector: { entity: { domain: "sensor" } } },
-  { name: "humidity_sensor", label: "Humidity Sensor", selector: { entity: { domain: "sensor" } } },
-  { name: "power_sensor", label: "Power Sensor", selector: { entity: { domain: "sensor" } } },
-  { name: "motion_sensor", label: "Motion Sensor", selector: { entity: { domain: "binary_sensor" } } },
-  { name: "pet_sensor", label: "Pet Sensor", selector: { entity: { domain: "binary_sensor" } } },
-  { name: "person_sensor", label: "Person Sensor", selector: { entity: { domain: "binary_sensor" } } },
-  { name: "vehicle_sensor", label: "Vehicle Sensor", selector: { entity: { domain: "binary_sensor" } } },
-  { name: "door_sensor", label: "Door Sensor", selector: { entity: { domain: "binary_sensor" } } },
-  { name: "window_sensor", label: "Window Sensor", selector: { entity: { domain: "binary_sensor" } } },
-  { name: "lock_entity", label: "Lock/Deadbolt", selector: { entity: { domain: "lock" } } },
-  { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
-  { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
-  { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
-  { name: "show_state", label: "Show State (On/Off)", selector: { boolean: {} }, default: false },
-  { name: "tap_action", label: "Tap Action", selector: { "ui-action": {} } },
-  { name: "hold_action", label: "Hold Action", selector: { "ui-action": {} } },
-  { name: "double_tap_action", label: "Double Tap Action", selector: { "ui-action": {} } },
+  // -------------------------------------------------------------------------
+  // Basic Settings - Always visible at top
+  // -------------------------------------------------------------------------
+  {
+    name: "name",
+    label: "Card Name",
+    helper: "Display name shown on the card (optional - uses entity name if blank)",
+    selector: { text: {} },
+  },
+  {
+    name: "icon",
+    label: "Icon",
+    helper: "Main icon displayed in the card",
+    selector: { icon: {} },
+  },
+  {
+    name: "entity",
+    label: "Primary Entity",
+    helper: "Main entity for card state (light, switch, etc.)",
+    selector: { entity: {} },
+  },
+
+  // -------------------------------------------------------------------------
+  // Value Sensors - Collapsible
+  // -------------------------------------------------------------------------
+  {
+    type: "expandable",
+    title: "Value Sensors",
+    icon: "mdi:thermometer",
+    schema: [
+      {
+        name: "temp_sensor",
+        label: "Temperature",
+        helper: "Displays temperature value with ° symbol",
+        selector: { entity: { domain: "sensor", device_class: "temperature" } },
+      },
+      {
+        name: "humidity_sensor",
+        label: "Humidity",
+        helper: "Displays humidity value with % symbol",
+        selector: { entity: { domain: "sensor", device_class: "humidity" } },
+      },
+      {
+        name: "power_sensor",
+        label: "Power",
+        helper: "Displays power consumption with W symbol",
+        selector: { entity: { domain: "sensor", device_class: "power" } },
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Binary Sensors - Collapsible
+  // -------------------------------------------------------------------------
+  {
+    type: "expandable",
+    title: "Binary Sensors",
+    icon: "mdi:motion-sensor",
+    schema: [
+      {
+        name: "motion_sensor",
+        label: "Motion Sensor",
+        helper: "Shows motion-sensor icon when motion detected",
+        selector: { entity: { domain: "binary_sensor", device_class: "motion" } },
+      },
+      {
+        name: "person_sensor",
+        label: "Person Sensor",
+        helper: "Shows person icon when person detected",
+        selector: { entity: { domain: "binary_sensor", device_class: "occupancy" } },
+      },
+      {
+        name: "pet_sensor",
+        label: "Pet Sensor",
+        helper: "Shows paw icon when pet detected",
+        selector: { entity: { domain: "binary_sensor" } },
+      },
+      {
+        name: "vehicle_sensor",
+        label: "Vehicle Sensor",
+        helper: "Shows car icon when vehicle detected",
+        selector: { entity: { domain: "binary_sensor" } },
+      },
+      {
+        name: "door_sensor",
+        label: "Door Sensor",
+        helper: "Shows door-open icon when door is open",
+        selector: { entity: { domain: "binary_sensor", device_class: "door" } },
+      },
+      {
+        name: "window_sensor",
+        label: "Window Sensor",
+        helper: "Shows window-open icon when window is open",
+        selector: { entity: { domain: "binary_sensor", device_class: "window" } },
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Lock Entity - Collapsible
+  // -------------------------------------------------------------------------
+  {
+    type: "expandable",
+    title: "Lock",
+    icon: "mdi:shield-lock",
+    schema: [
+      {
+        name: "lock_entity",
+        label: "Lock / Deadbolt",
+        helper: "Shows lock status with shield icon (always visible when configured)",
+        selector: { entity: { domain: "lock" } },
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Display Options - Collapsible
+  // -------------------------------------------------------------------------
+  {
+    type: "expandable",
+    title: "Display Options",
+    icon: "mdi:eye-settings",
+    schema: [
+      {
+        name: "show_name",
+        label: "Show Name",
+        helper: "Display card name in top left",
+        selector: { boolean: {} },
+        default: true,
+      },
+      {
+        name: "show_icon",
+        label: "Show Icon",
+        helper: "Display main icon in top right",
+        selector: { boolean: {} },
+        default: true,
+      },
+      {
+        name: "show_state",
+        label: "Show State Text",
+        helper: "Display On/Off state next to name",
+        selector: { boolean: {} },
+        default: false,
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Actions - Collapsible
+  // -------------------------------------------------------------------------
+  {
+    type: "expandable",
+    title: "Actions",
+    icon: "mdi:gesture-tap",
+    schema: [
+      {
+        name: "tap_action",
+        label: "Tap Action",
+        helper: "Action when card is tapped",
+        selector: { "ui-action": {} },
+      },
+      {
+        name: "hold_action",
+        label: "Hold Action",
+        helper: "Action when card is held",
+        selector: { "ui-action": {} },
+      },
+      {
+        name: "double_tap_action",
+        label: "Double Tap Action",
+        helper: "Action when card is double-tapped",
+        selector: { "ui-action": {} },
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Advanced - Collapsible
+  // -------------------------------------------------------------------------
+  {
+    type: "expandable",
+    title: "Advanced",
+    icon: "mdi:cog",
+    schema: [
+      {
+        name: "grid_area",
+        label: "Grid Area",
+        helper: "CSS grid-area for layout positioning (e.g., 'living-room')",
+        selector: { text: {} },
+      },
+    ],
+  },
 ];
 
 @customElement("sensor-display-card-editor")
@@ -50,6 +222,10 @@ export class SensorDisplayCardEditor extends LitElement {
 
   private _computeLabel(schema: any): string {
     return schema.label || schema.name;
+  }
+
+  private _computeHelper(schema: any): string {
+    return schema.helper || "";
   }
 
   private _valueChanged(ev: CustomEvent): void {
@@ -67,10 +243,17 @@ export class SensorDisplayCardEditor extends LitElement {
         .data=${this._config}
         .schema=${SCHEMA}
         .computeLabel=${this._computeLabel}
+        .computeHelper=${this._computeHelper}
         @value-changed=${this._valueChanged}
       ></ha-form>
     `;
   }
+
+  static styles = css`
+    ha-form {
+      display: block;
+    }
+  `;
 }
 
 // ============================================================================
@@ -208,7 +391,7 @@ export class SensorDisplayCard extends LitElement {
   private _getLockIcon(entity: HassEntity | undefined): string {
     if (!entity) return "mdi:shield-lock";
     const state = entity.state;
-    
+
     switch (state) {
       case "locked":
       case "locking":
@@ -232,7 +415,7 @@ export class SensorDisplayCard extends LitElement {
   private _getLockColorVar(entity: HassEntity | undefined): string {
     if (!entity) return "var(--state-lock-locked-color, var(--primary-text-color))";
     const state = entity.state;
-    
+
     switch (state) {
       case "locked":
         return "var(--state-lock-locked-color, var(--success-color, #4caf50))";
@@ -456,7 +639,7 @@ export class SensorDisplayCard extends LitElement {
     const vehicleActive = vehicleEntity?.state === "on";
     const doorOpen = this._isDoorOpen(doorEntity);
     const windowOpen = this._isWindowOpen(windowEntity);
-    
+
     // Lock state
     const lockIcon = this._getLockIcon(lockEntity);
     const lockColor = this._getLockColorVar(lockEntity);
