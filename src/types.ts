@@ -19,6 +19,9 @@ export interface SensorDisplayCardConfig extends LovelaceCardConfig {
   door_sensor?: string;
   window_sensor?: string;
 
+  // Lock entity configuration
+  lock_entity?: string;
+
   // Display toggles - all default to true
   show_name?: boolean;
   show_icon?: boolean;
