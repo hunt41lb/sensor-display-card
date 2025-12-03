@@ -128,6 +128,7 @@ function t(t,e,s,i){var o,n=arguments.length,r=n<3?e:null===i?i=Object.getOwnPro
     /* Icon - matches your styles.icon */
     .icon-container ha-icon {
       width: 35px;
+      height: 35px;
       --mdc-icon-size: 35px;
       color: var(--primary-text-color);
       transition: color 0.3s ease;
