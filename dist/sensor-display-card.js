@@ -34,6 +34,10 @@ function t(t,e,s,i){var o,n=arguments.length,r=n<3?e:null===i?i=Object.getOwnPro
 
         <!-- Binary Sensors Row -->
         <div class="binary-sensors">
+          ${c?I`<ha-icon
+                class="binary-sensor ${_?"active":"inactive"}"
+                icon="${_?"mdi:door-open":"mdi:door-closed"}"
+              ></ha-icon>`:V}
           ${r?I`<ha-icon
                 class="binary-sensor ${d?"active":"inactive"}"
                 icon="${d?"mdi:account":"mdi:account-off"}"
