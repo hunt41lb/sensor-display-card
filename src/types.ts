@@ -17,6 +17,7 @@ export interface SensorDisplayCardConfig extends LovelaceCardConfig {
   person_sensor?: string;
   vehicle_sensor?: string;
   door_sensor?: string;
+  window_sensor?: string;
 
   // Display toggles - all default to true
   show_name?: boolean;
