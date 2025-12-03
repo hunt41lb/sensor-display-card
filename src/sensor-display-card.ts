@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "2.1.0";
+const CARD_VERSION = "2.2.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -189,6 +189,170 @@ const SCHEMA = [
         label: "Double Tap Action",
         helper: "Action when card is double-tapped",
         selector: { "ui-action": {} },
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Appearance - Collapsible
+  // -------------------------------------------------------------------------
+  {
+    type: "expandable",
+    title: "Appearance",
+    icon: "mdi:palette",
+    schema: [
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "card_height",
+            label: "Card Height",
+            helper: "Height of the card",
+            selector: {
+              select: {
+                options: [
+                  { value: "compact", label: "Compact (75px)" },
+                  { value: "default", label: "Default (97px)" },
+                  { value: "tall", label: "Tall (120px)" },
+                ],
+                mode: "dropdown",
+                custom_value: true,
+              },
+            },
+          },
+          {
+            name: "card_width",
+            label: "Card Width",
+            helper: "Width of the card",
+            selector: {
+              select: {
+                options: [
+                  { value: "auto", label: "Auto (fill container)" },
+                  { value: "full", label: "Full width" },
+                ],
+                mode: "dropdown",
+                custom_value: true,
+              },
+            },
+          },
+        ],
+      },
+      {
+        name: "icon_size",
+        label: "Icon Size",
+        helper: "Size of the main icon",
+        selector: {
+          select: {
+            options: [
+              { value: "small", label: "Small (25px)" },
+              { value: "default", label: "Default (35px)" },
+              { value: "large", label: "Large (45px)" },
+            ],
+            mode: "dropdown",
+          },
+        },
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Colors - Collapsible
+  // -------------------------------------------------------------------------
+  {
+    type: "expandable",
+    title: "Colors",
+    icon: "mdi:format-color-fill",
+    schema: [
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "icon_color",
+            label: "Icon Color",
+            helper: "Default: var(--primary-text-color)",
+            selector: { ui_color: { default_color: "" } },
+          },
+          {
+            name: "icon_color_active",
+            label: "Icon Color (Active)",
+            helper: "Default: Uses light RGB or theme color",
+            selector: { ui_color: { default_color: "" } },
+          },
+        ],
+      },
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "icon_background_color",
+            label: "Icon Background",
+            helper: "Default: var(--secondary-background-color)",
+            selector: { ui_color: { default_color: "" } },
+          },
+          {
+            name: "icon_background_color_active",
+            label: "Icon Background (Active)",
+            helper: "Default: Uses light RGB with opacity",
+            selector: { ui_color: { default_color: "" } },
+          },
+        ],
+      },
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "name_color",
+            label: "Name Color",
+            helper: "Default: var(--primary-text-color)",
+            selector: { ui_color: { default_color: "" } },
+          },
+          {
+            name: "sensor_text_color",
+            label: "Sensor Text Color",
+            helper: "Default: var(--primary-text-color)",
+            selector: { ui_color: { default_color: "" } },
+          },
+        ],
+      },
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "active_sensor_color",
+            label: "Active Sensor Icon Color",
+            helper: "Default: var(--state-binary_sensor-active-color)",
+            selector: { ui_color: { default_color: "" } },
+          },
+          {
+            name: "card_border_color",
+            label: "Card Border Color (Active)",
+            helper: "Default: var(--primary-text-color)",
+            selector: { ui_color: { default_color: "" } },
+          },
+        ],
+      },
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "card_background_color",
+            label: "Card Background",
+            helper: "Default: var(--card-background-color)",
+            selector: { ui_color: { default_color: "" } },
+          },
+          {
+            name: "card_background_color_active",
+            label: "Card Background (Active)",
+            helper: "Default: var(--card-background-color)",
+            selector: { ui_color: { default_color: "" } },
+          },
+        ],
       },
     ],
   },
@@ -439,6 +603,72 @@ export class SensorDisplayCard extends LitElement {
   }
 
   /**
+   * Get card height based on config
+   */
+  private _getCardHeight(): string {
+    const height = this._config?.card_height;
+
+    if (!height || height === "default") return "97px";
+    if (height === "compact") return "75px";
+    if (height === "tall") return "120px";
+
+    // Custom value - if it's a number, add px
+    if (typeof height === "number") return `${height}px`;
+
+    // If it's a string with a number, add px if needed
+    if (typeof height === "string") {
+      const numValue = parseFloat(height);
+      if (!isNaN(numValue) && height === String(numValue)) {
+        return `${numValue}px`;
+      }
+      return height; // Return as-is if it already has units
+    }
+
+    return "97px";
+  }
+
+  /**
+   * Get card width based on config
+   */
+  private _getCardWidth(): string {
+    const width = this._config?.card_width;
+
+    if (!width || width === "auto") return "auto";
+    if (width === "full") return "100%";
+
+    // Custom value - if it's a number, add px
+    if (typeof width === "number") return `${width}px`;
+
+    // If it's a string with a number, add px if needed
+    if (typeof width === "string") {
+      const numValue = parseFloat(width);
+      if (!isNaN(numValue) && width === String(numValue)) {
+        return `${numValue}px`;
+      }
+      return width; // Return as-is if it already has units
+    }
+
+    return "auto";
+  }
+
+  /**
+   * Get icon and container sizes based on config
+   */
+  private _getIconSizes(): { iconSize: string; containerSize: string } {
+    const size = this._config?.icon_size;
+
+    switch (size) {
+      case "small":
+        return { iconSize: "25px", containerSize: "40px" };
+      case "large":
+        return { iconSize: "45px", containerSize: "60px" };
+      case "default":
+      default:
+        return { iconSize: "35px", containerSize: "50px" };
+    }
+  }
+
+  /**
    * Get display text for entity state
    */
   private _getStateText(entity: HassEntity | undefined): string {
@@ -656,13 +886,64 @@ export class SensorDisplayCard extends LitElement {
     // Icon
     const icon = this._config.icon || "mdi:lightbulb";
 
-    // Dynamic styles for RGB (only for lights with rgb_color)
-    const iconBgStyle = rgbColor && isOn
-      ? `background-color: rgba(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]}, 0.2)`
-      : "";
-    const iconColorStyle = rgbColor && isOn
-      ? `color: rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`
-      : "";
+    // =========================================================================
+    // APPEARANCE: Calculate sizes
+    // =========================================================================
+
+    // Card height
+    const cardHeight = this._getCardHeight();
+
+    // Card width
+    const cardWidth = this._getCardWidth();
+
+    // Icon sizes
+    const { iconSize, containerSize } = this._getIconSizes();
+
+    // =========================================================================
+    // COLORS: Apply custom colors with theme defaults
+    // =========================================================================
+
+    // Icon colors
+    const iconColorDefault = this._config.icon_color || "var(--primary-text-color)";
+    const iconColorActive = this._config.icon_color_active
+      || (rgbColor ? `rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})` : iconColorDefault);
+
+    // Icon background colors
+    const iconBgDefault = this._config.icon_background_color || "var(--secondary-background-color)";
+    const iconBgActive = this._config.icon_background_color_active
+      || (rgbColor ? `rgba(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]}, 0.2)` : iconBgDefault);
+
+    // Text colors
+    const nameColor = this._config.name_color || "var(--primary-text-color)";
+    const sensorTextColor = this._config.sensor_text_color || "var(--primary-text-color)";
+
+    // Active sensor color
+    const activeSensorColor = this._config.active_sensor_color
+      || "var(--state-binary_sensor-active-color, var(--state-active-color, #ffc107))";
+
+    // Card colors
+    const cardBgDefault = this._config.card_background_color
+      || "color-mix(in srgb, var(--card-background-color) 50%, transparent)";
+    const cardBgActive = this._config.card_background_color_active
+      || "var(--card-background-color)";
+    const cardBorderColor = this._config.card_border_color || "var(--primary-text-color)";
+
+    // Build the dynamic icon style
+    const iconBgStyle = isOn ? `background-color: ${iconBgActive}` : `background-color: ${iconBgDefault}`;
+    const iconColorStyle = isOn ? `color: ${iconColorActive}` : `color: ${iconColorDefault}`;
+
+    // Build the card style with CSS custom properties
+    const cardStyle = `
+      --card-height: ${cardHeight};
+      --card-width: ${cardWidth};
+      --icon-size: ${iconSize};
+      --icon-container-size: ${containerSize};
+      --name-color: ${nameColor};
+      --sensor-text-color: ${sensorTextColor};
+      --active-sensor-color: ${activeSensorColor};
+      --card-bg-color: ${isOn ? cardBgActive : cardBgDefault};
+      --card-border-color: ${cardBorderColor};
+    `.replace(/\s+/g, ' ').trim();
 
     // Show toggles (default to true for name/icon, false for state)
     const showName = this._config.show_name !== false;
@@ -675,6 +956,7 @@ export class SensorDisplayCard extends LitElement {
     return html`
       <ha-card
         class="${isOn ? "state-on" : "state-off"}"
+        style="${cardStyle}"
         @pointerdown=${this._handlePointerDown}
         @pointerup=${this._handlePointerUp}
         @pointercancel=${this._handlePointerUp}
@@ -769,7 +1051,7 @@ export class SensorDisplayCard extends LitElement {
       display: block;
     }
 
-    /* Card - matches your button_card styles.card */
+    /* Card - using CSS custom properties for customization */
     ha-card {
       display: grid;
       grid-template-areas:
@@ -778,22 +1060,23 @@ export class SensorDisplayCard extends LitElement {
       grid-template-rows: 1fr min-content;
       grid-template-columns: min-content 1fr;
       padding: 6px;
-      height: 97px;
+      height: var(--card-height, 97px);
+      width: var(--card-width, auto);
       box-sizing: border-box;
       cursor: pointer;
       transition: background-color 0.3s ease, border 0.3s ease;
+      background-color: var(--card-bg-color);
     }
 
     ha-card.state-on {
-      background-color: var(--card-background-color);
-      border: 1px solid var(--primary-text-color);
+      border: 1px solid var(--card-border-color, var(--primary-text-color));
     }
 
     ha-card.state-off {
-      background-color: color-mix(in srgb, var(--card-background-color) 50%, transparent);
+      border: none;
     }
 
-    /* Name - matches your styles.name */
+    /* Name - using custom property for color */
     .name {
       grid-area: n;
       justify-self: start;
@@ -801,7 +1084,7 @@ export class SensorDisplayCard extends LitElement {
       text-align: left;
       font-size: 16px;
       font-weight: 500;
-      color: var(--primary-text-color);
+      color: var(--name-color, var(--primary-text-color));
       padding: 14px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -814,7 +1097,7 @@ export class SensorDisplayCard extends LitElement {
       font-size: 14px;
     }
 
-    /* Icon container - matches your styles.img_cell */
+    /* Icon container - using custom properties for size */
     .icon-container {
       grid-area: i;
       justify-self: end;
@@ -823,26 +1106,24 @@ export class SensorDisplayCard extends LitElement {
       align-items: center;
       justify-content: center;
       border-radius: 100%;
-      width: 50px;
-      height: 50px;
-      background-color: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
-      transition: background-color 1.2s ease;
+      width: var(--icon-container-size, 50px);
+      height: var(--icon-container-size, 50px);
+      transition: background-color 0.5s ease;
     }
 
     .icon-container.hidden {
       visibility: hidden;
     }
 
-    /* Icon - matches your styles.icon */
+    /* Icon - using custom properties for size */
     .icon-container ha-icon {
-      width: 35px;
-      height: 35px;
-      --mdc-icon-size: 35px;
-      color: var(--primary-text-color);
+      width: var(--icon-size, 35px);
+      height: var(--icon-size, 35px);
+      --mdc-icon-size: var(--icon-size, 35px);
       transition: color 0.3s ease;
     }
 
-    /* Sensors container - matches your custom_fields.temp positioning */
+    /* Sensors container - using custom property for text color */
     .sensors {
       grid-area: temp;
       justify-self: start;
@@ -852,21 +1133,21 @@ export class SensorDisplayCard extends LitElement {
       padding: 0 0 1px 14px;
     }
 
-    /* Temperature - matches your custom_fields.temp styles */
+    /* Temperature - using custom property for color */
     .temp {
       font-size: 16px;
       line-height: 16px;
       font-weight: 300;
-      color: var(--primary-text-color);
+      color: var(--sensor-text-color, var(--primary-text-color));
     }
 
-    /* Humidity and Power - matches your inline styles in custom_fields.temp */
+    /* Humidity and Power - using custom property for color */
     .humidity,
     .power {
       font-size: 12px;
       font-weight: 400;
       opacity: 0.7;
-      color: var(--primary-text-color);
+      color: var(--sensor-text-color, var(--primary-text-color));
     }
 
     .placeholder {
@@ -875,7 +1156,7 @@ export class SensorDisplayCard extends LitElement {
       color: var(--secondary-text-color);
     }
 
-    /* Binary sensors row - replaces single motion sensor */
+    /* Binary sensors row */
     .binary-sensors {
       grid-area: sensors;
       justify-self: end;
@@ -895,7 +1176,7 @@ export class SensorDisplayCard extends LitElement {
     }
 
     .binary-sensors .binary-sensor.active {
-      color: var(--state-binary_sensor-active-color, var(--state-active-color, #ffc107));
+      color: var(--active-sensor-color, var(--state-binary_sensor-active-color, var(--state-active-color, #ffc107)));
       animation: pulse 1.5s ease-in-out infinite;
     }
 
