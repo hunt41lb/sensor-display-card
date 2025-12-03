@@ -5,7 +5,7 @@ import { HassEntity } from "home-assistant-js-websocket";
 import type { SensorDisplayCardConfig } from "./types";
 
 // Card version for debugging
-const CARD_VERSION = "1.7.0";
+const CARD_VERSION = "1.8.0";
 
 console.info(
   `%c SENSOR-DISPLAY-CARD %c v${CARD_VERSION} `,
@@ -27,6 +27,7 @@ const SCHEMA = [
   { name: "pet_sensor", label: "Pet Sensor", selector: { entity: { domain: "binary_sensor" } } },
   { name: "person_sensor", label: "Person Sensor", selector: { entity: { domain: "binary_sensor" } } },
   { name: "vehicle_sensor", label: "Vehicle Sensor", selector: { entity: { domain: "binary_sensor" } } },
+  { name: "door_sensor", label: "Door Sensor", selector: { entity: { domain: "binary_sensor" } } },
   { name: "grid_area", label: "Grid Area (for layout)", selector: { text: {} } },
   { name: "show_name", label: "Show Name", selector: { boolean: {} }, default: true },
   { name: "show_icon", label: "Show Icon", selector: { boolean: {} }, default: true },
@@ -179,6 +180,15 @@ export class SensorDisplayCard extends LitElement {
         // For unknown domains, "on" is active
         return state === "on";
     }
+  }
+
+  /**
+   * Check if door sensor is open (handles both 'on' and 'Window/door is open' states)
+   */
+  private _isDoorOpen(entity: HassEntity | undefined): boolean {
+    if (!entity) return false;
+    const state = entity.state;
+    return state === "on" || state === "Window/door is open";
   }
 
   /**
@@ -362,6 +372,9 @@ export class SensorDisplayCard extends LitElement {
     const vehicleEntity = this._config.vehicle_sensor
       ? this.hass.states[this._config.vehicle_sensor]
       : undefined;
+    const doorEntity = this._config.door_sensor
+      ? this.hass.states[this._config.door_sensor]
+      : undefined;
 
     // Determine states using domain-aware helper
     const isOn = this._isEntityActive(primaryEntity);
@@ -371,6 +384,7 @@ export class SensorDisplayCard extends LitElement {
     const petActive = petEntity?.state === "on";
     const personActive = personEntity?.state === "on";
     const vehicleActive = vehicleEntity?.state === "on";
+    const doorOpen = this._isDoorOpen(doorEntity);
 
     // RGB color (only applies to lights)
     const rgbColor = primaryEntity?.attributes?.rgb_color as [number, number, number] | undefined;
@@ -440,6 +454,12 @@ export class SensorDisplayCard extends LitElement {
 
         <!-- Binary Sensors Row -->
         <div class="binary-sensors">
+          ${doorEntity
+            ? html`<ha-icon
+                class="binary-sensor ${doorOpen ? "active" : "inactive"}"
+                icon="${doorOpen ? "mdi:door-open" : "mdi:door-closed"}"
+              ></ha-icon>`
+            : nothing}
           ${personEntity
             ? html`<ha-icon
                 class="binary-sensor ${personActive ? "active" : "inactive"}"
@@ -545,6 +565,7 @@ export class SensorDisplayCard extends LitElement {
     /* Icon - matches your styles.icon */
     .icon-container ha-icon {
       width: 35px;
+      height: 35px;
       --mdc-icon-size: 35px;
       color: var(--primary-text-color);
       transition: color 0.3s ease;
