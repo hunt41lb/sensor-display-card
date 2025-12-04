@@ -1,4 +1,4 @@
-// src/types.ts
+// @/src/types.ts
 
 // ============================================================================
 // TYPES - TypeScript interfaces for the card
@@ -10,6 +10,11 @@ import { ActionConfig } from "custom-card-helpers";
  * Icon size options
  */
 export type IconSize = "small" | "default" | "large";
+
+/**
+ * Position options for icon and name
+ */
+export type PositionOption = "left" | "center" | "right";
 
 /**
  * Main card configuration interface
@@ -42,6 +47,8 @@ export interface SensorDisplayCardConfig {
   card_height?: string;
   card_width?: string;
   icon_size?: IconSize;
+  icon_position?: PositionOption;
+  name_position?: PositionOption;
 
   // Display toggles
   show_name?: boolean;
@@ -78,6 +85,23 @@ export interface CardInfo {
 export interface IconSizeConfig {
   iconSize: string;
   containerSize: string;
+}
+
+/**
+ * Position styles for CSS custom properties
+ */
+export interface PositionStyles {
+  nameGridArea: string;
+  nameJustify: string;
+  nameTextAlign: string;
+  iconGridArea: string;
+  iconJustify: string;
+  sensorsGridArea: string;
+  sensorsJustify: string;
+  sensorsPadding: string;
+  binarySensorsGridArea: string;
+  binarySensorsJustify: string;
+  binarySensorsMargin: string;
 }
 
 /**
