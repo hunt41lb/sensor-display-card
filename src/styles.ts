@@ -26,18 +26,19 @@ export const cardStyles = css`
     height: var(--card-height, 97px);
     width: var(--card-width, auto);
     box-sizing: border-box;
+    border-radius: var(--ha-card-border-radius, 12px);
     cursor: pointer;
     transition: background-color 0.3s ease, border 0.3s ease;
   }
 
   ha-card.state-on {
     background-color: var(--card-background-color);
-    border: 1px solid var(--primary-text-color);
+    border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color));
   }
 
   ha-card.state-off {
     background-color: color-mix(in srgb, var(--card-background-color) 50%, transparent);
-    border: none;
+    border: var(--ha-card-border-width, 1px) solid color-mix(in srgb, var(--ha-card-border-color, var(--divider-color)) 50%, transparent);
   }
 
   /* Name */
