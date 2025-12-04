@@ -1,4 +1,4 @@
-// src/schema.ts
+// @/src/schema.ts
 
 // ============================================================================
 // SCHEMA - Editor schema definition for ha-form
@@ -10,25 +10,38 @@
  */
 export const EDITOR_SCHEMA = [
   // ---------------------------------------------------------------------------
-  // Basic Settings - Always visible at top
+  // Basic Settings - Collapsible
   // ---------------------------------------------------------------------------
   {
-    name: "name",
-    label: "Card Name",
-    helper: "Display name shown on the card (optional - uses entity name if blank)",
-    selector: { text: {} },
-  },
-  {
-    name: "icon",
-    label: "Icon",
-    helper: "Main icon displayed in the card",
-    selector: { icon: {} },
-  },
-  {
-    name: "entity",
-    label: "Primary Entity",
-    helper: "Main entity for card state (light, switch, etc.)",
-    selector: { entity: {} },
+    type: "expandable",
+    title: "Basic Settings",
+    icon: "mdi:cog",
+    schema: [
+      {
+        name: "entity",
+        label: "Primary Entity",
+        helper: "Main entity for the card (controls on/off state and icon color)",
+        selector: { entity: {} },
+      },
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "name",
+            label: "Name",
+            helper: "Override the entity's friendly name",
+            selector: { text: {} },
+          },
+          {
+            name: "icon",
+            label: "Icon",
+            helper: "Override the default icon (e.g., mdi:lightbulb)",
+            selector: { icon: {} },
+          },
+        ],
+      },
+    ],
   },
 
   // ---------------------------------------------------------------------------
@@ -41,21 +54,42 @@ export const EDITOR_SCHEMA = [
     schema: [
       {
         name: "temp_sensor",
-        label: "Temperature",
-        helper: "Displays temperature value with ° symbol",
-        selector: { entity: { domain: "sensor", device_class: "temperature" } },
+        label: "Temperature Sensor",
+        helper: "Displays temperature with ° symbol",
+        selector: {
+          entity: {
+            filter: {
+              domain: "sensor",
+              device_class: "temperature",
+            },
+          },
+        },
       },
       {
         name: "humidity_sensor",
-        label: "Humidity",
-        helper: "Displays humidity value with % symbol",
-        selector: { entity: { domain: "sensor", device_class: "humidity" } },
+        label: "Humidity Sensor",
+        helper: "Displays humidity with % symbol",
+        selector: {
+          entity: {
+            filter: {
+              domain: "sensor",
+              device_class: "humidity",
+            },
+          },
+        },
       },
       {
         name: "power_sensor",
-        label: "Power",
-        helper: "Displays power consumption with W symbol",
-        selector: { entity: { domain: "sensor", device_class: "power" } },
+        label: "Power Sensor",
+        helper: "Displays power with W symbol",
+        selector: {
+          entity: {
+            filter: {
+              domain: "sensor",
+              device_class: "power",
+            },
+          },
+        },
       },
     ],
   },
@@ -71,55 +105,101 @@ export const EDITOR_SCHEMA = [
       {
         name: "motion_sensor",
         label: "Motion Sensor",
-        helper: "Shows motion-sensor icon when motion detected",
-        selector: { entity: { domain: "binary_sensor", device_class: "motion" } },
+        helper: "Shows motion icon when active (hidden when inactive)",
+        selector: {
+          entity: {
+            filter: {
+              domain: "binary_sensor",
+              device_class: "motion",
+            },
+          },
+        },
       },
       {
         name: "person_sensor",
         label: "Person Sensor",
-        helper: "Shows person icon when person detected",
-        selector: { entity: { domain: "binary_sensor", device_class: "occupancy" } },
+        helper: "Shows person/occupancy icon when detected",
+        selector: {
+          entity: {
+            filter: {
+              domain: "binary_sensor",
+              device_class: "occupancy",
+            },
+          },
+        },
       },
       {
         name: "pet_sensor",
         label: "Pet Sensor",
-        helper: "Shows paw icon when pet detected",
-        selector: { entity: { domain: "binary_sensor" } },
+        helper: "Shows pet icon when detected",
+        selector: {
+          entity: {
+            filter: {
+              domain: "binary_sensor",
+            },
+          },
+        },
       },
       {
         name: "vehicle_sensor",
         label: "Vehicle Sensor",
-        helper: "Shows car icon when vehicle detected",
-        selector: { entity: { domain: "binary_sensor" } },
+        helper: "Shows vehicle icon when detected",
+        selector: {
+          entity: {
+            filter: {
+              domain: "binary_sensor",
+            },
+          },
+        },
       },
       {
         name: "door_sensor",
         label: "Door Sensor",
-        helper: "Shows door-open icon when door is open",
-        selector: { entity: { domain: "binary_sensor", device_class: "door" } },
+        helper: "Shows door open/closed icon when open",
+        selector: {
+          entity: {
+            filter: {
+              domain: "binary_sensor",
+              device_class: "door",
+            },
+          },
+        },
       },
       {
         name: "window_sensor",
         label: "Window Sensor",
-        helper: "Shows window-open icon when window is open",
-        selector: { entity: { domain: "binary_sensor", device_class: "window" } },
+        helper: "Shows window open/closed icon when open",
+        selector: {
+          entity: {
+            filter: {
+              domain: "binary_sensor",
+              device_class: "window",
+            },
+          },
+        },
       },
     ],
   },
 
   // ---------------------------------------------------------------------------
-  // Lock Entity - Collapsible
+  // Lock - Collapsible
   // ---------------------------------------------------------------------------
   {
     type: "expandable",
     title: "Lock",
-    icon: "mdi:shield-lock",
+    icon: "mdi:lock",
     schema: [
       {
         name: "lock_entity",
-        label: "Lock / Deadbolt",
-        helper: "Shows lock status with shield icon (always visible when configured)",
-        selector: { entity: { domain: "lock" } },
+        label: "Lock Entity",
+        helper: "Always visible with state-aware icons and colors",
+        selector: {
+          entity: {
+            filter: {
+              domain: "lock",
+            },
+          },
+        },
       },
     ],
   },
@@ -130,28 +210,31 @@ export const EDITOR_SCHEMA = [
   {
     type: "expandable",
     title: "Display Options",
-    icon: "mdi:eye-settings",
+    icon: "mdi:eye",
     schema: [
       {
-        name: "show_name",
-        label: "Show Name",
-        helper: "Display card name in top left",
-        selector: { boolean: {} },
-        default: true,
-      },
-      {
-        name: "show_icon",
-        label: "Show Icon",
-        helper: "Display main icon in top right",
-        selector: { boolean: {} },
-        default: true,
-      },
-      {
-        name: "show_state",
-        label: "Show State Text",
-        helper: "Display On/Off state next to name",
-        selector: { boolean: {} },
-        default: false,
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "show_name",
+            label: "Show Name",
+            helper: "Display the entity name",
+            selector: { boolean: {} },
+          },
+          {
+            name: "show_icon",
+            label: "Show Icon",
+            helper: "Display the entity icon",
+            selector: { boolean: {} },
+          },
+          {
+            name: "show_state",
+            label: "Show State",
+            helper: "Display state text next to name",
+            selector: { boolean: {} },
+          },
+        ],
       },
     ],
   },
@@ -168,19 +251,25 @@ export const EDITOR_SCHEMA = [
         name: "tap_action",
         label: "Tap Action",
         helper: "Action when card is tapped",
-        selector: { "ui-action": {} },
+        selector: {
+          "ui-action": {},
+        },
       },
       {
         name: "hold_action",
         label: "Hold Action",
         helper: "Action when card is held",
-        selector: { "ui-action": {} },
+        selector: {
+          "ui-action": {},
+        },
       },
       {
         name: "double_tap_action",
         label: "Double Tap Action",
         helper: "Action when card is double-tapped",
-        selector: { "ui-action": {} },
+        selector: {
+          "ui-action": {},
+        },
       },
     ],
   },
@@ -193,6 +282,42 @@ export const EDITOR_SCHEMA = [
     title: "Appearance",
     icon: "mdi:palette",
     schema: [
+      {
+        type: "grid",
+        name: "",
+        schema: [
+          {
+            name: "icon_position",
+            label: "Icon Position",
+            helper: "Horizontal position of the icon",
+            selector: {
+              select: {
+                options: [
+                  { value: "left", label: "Left" },
+                  { value: "center", label: "Center" },
+                  { value: "right", label: "Right" },
+                ],
+                mode: "dropdown",
+              },
+            },
+          },
+          {
+            name: "name_position",
+            label: "Name Position",
+            helper: "Horizontal position of the name",
+            selector: {
+              select: {
+                options: [
+                  { value: "left", label: "Left" },
+                  { value: "center", label: "Center" },
+                  { value: "right", label: "Right" },
+                ],
+                mode: "dropdown",
+              },
+            },
+          },
+        ],
+      },
       {
         type: "grid",
         name: "",
@@ -235,12 +360,12 @@ export const EDITOR_SCHEMA = [
   {
     type: "expandable",
     title: "Advanced",
-    icon: "mdi:cog",
+    icon: "mdi:code-braces",
     schema: [
       {
         name: "grid_area",
         label: "Grid Area",
-        helper: "CSS grid-area for layout positioning (e.g., 'living-room')",
+        helper: "For use with layout-card (e.g., 'a' or '1 / 1 / 2 / 3')",
         selector: { text: {} },
       },
     ],
