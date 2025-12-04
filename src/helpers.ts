@@ -12,146 +12,193 @@ import {
   DEFAULT_CARD_HEIGHT,
   DEFAULT_CARD_WIDTH,
 } from "./constants";
-import type { IconSize, IconSizeConfig } from "./types";
+import type { IconSize, IconSizeConfig, PositionOption, PositionStyles } from "./types";
+
+// =============================================================================
+// Value Parsing
+// =============================================================================
 
 /**
- * Parse a sensor value to a display string
+ * Parse a sensor value to a number, returning undefined if invalid
  */
-export function parseValue(value: string | undefined): string {
-  if (!value || value === "unavailable" || value === "unknown") {
-    return "--";
-  }
-  const num = parseFloat(value);
-  return isNaN(num) ? "--" : num.toFixed(0);
+export function parseValue(entity: HassEntity | undefined): number | undefined {
+  if (!entity) return undefined;
+  const val = parseFloat(entity.state);
+  return isNaN(val) ? undefined : val;
 }
 
+// =============================================================================
+// Entity State Helpers
+// =============================================================================
+
 /**
- * Determine if an entity is in an "active" state based on its domain
+ * Check if an entity is in an "active" state based on its domain
  */
 export function isEntityActive(entity: HassEntity | undefined): boolean {
   if (!entity) return false;
 
-  const state = entity.state;
+  const state = entity.state.toLowerCase();
   const domain = entity.entity_id.split(".")[0];
 
-  // Handle unavailable/unknown states
-  if (state === "unavailable" || state === "unknown") return false;
-
+  // Domain-specific checks
   switch (domain) {
     case "light":
     case "switch":
-    case "fan":
     case "input_boolean":
-    case "automation":
-    case "script":
+    case "fan":
+    case "climate":
+    case "humidifier":
+      return state === "on";
+
     case "binary_sensor":
       return state === "on";
 
-    case "cover":
-      return state === "open" || state === "opening";
-
     case "lock":
-      return state === "unlocked" || state === "unlocking";
+      return state === "locked";
+
+    case "cover":
+      return state !== "closed";
 
     case "media_player":
-      return state === "playing" || state === "paused" || state === "on" || state === "idle";
-
-    case "climate":
-      return state !== "off";
+      return state === "playing" || state === "on";
 
     case "vacuum":
-      return state === "cleaning" || state === "returning";
+      return state === "cleaning";
 
-    case "person":
-    case "device_tracker":
-      return state === "home";
+    case "alarm_control_panel":
+      return state !== "disarmed";
 
     default:
-      // For unknown domains, "on" is active
-      return state === "on";
+      // For sensors and other entities, consider "on" or numeric > 0 as active
+      if (state === "on") return true;
+      const numVal = parseFloat(state);
+      if (!isNaN(numVal)) return numVal > 0;
+      return state !== "off" && state !== "unavailable" && state !== "unknown";
   }
 }
 
 /**
- * Check if door sensor is open (handles both 'on' and 'Window/door is open' states)
+ * Check if a door entity is open
  */
 export function isDoorOpen(entity: HassEntity | undefined): boolean {
   if (!entity) return false;
-  const state = entity.state;
-  return state === "on" || state === "Window/door is open";
+  return entity.state === "on";
 }
 
 /**
- * Check if window sensor is open (handles both 'on' and 'Window/door is open' states)
+ * Check if a window entity is open
  */
 export function isWindowOpen(entity: HassEntity | undefined): boolean {
   if (!entity) return false;
-  const state = entity.state;
-  return state === "on" || state === "Window/door is open";
+  return entity.state === "on";
 }
 
+// =============================================================================
+// Lock Helpers
+// =============================================================================
+
 /**
- * Get lock icon based on state
+ * Get the appropriate icon for a lock state
  */
 export function getLockIcon(entity: HassEntity | undefined): string {
-  if (!entity) return LOCK_ICONS.locked;
-  const state = entity.state as keyof typeof LOCK_ICONS;
+  if (!entity) return LOCK_ICONS.unknown;
+  const state = entity.state.toLowerCase() as keyof typeof LOCK_ICONS;
   return LOCK_ICONS[state] || LOCK_ICONS.unknown;
 }
 
 /**
- * Get lock color CSS variable based on state
+ * Get the CSS color variable for a lock state
  */
 export function getLockColorVar(entity: HassEntity | undefined): string {
-  if (!entity) return "var(--state-lock-locked-color, var(--primary-text-color))";
-  const state = entity.state as keyof typeof LOCK_COLORS;
+  if (!entity) return LOCK_COLORS.unknown;
+  const state = entity.state.toLowerCase() as keyof typeof LOCK_COLORS;
   return LOCK_COLORS[state] || LOCK_COLORS.unknown;
 }
 
+// =============================================================================
+// Appearance Helpers
+// =============================================================================
+
 /**
- * Get card height based on config value
+ * Get card height CSS value from config
+ * Supports: "97px", "120", "50%", etc.
  */
-export function getCardHeight(height: string | undefined): string {
-  if (!height) return DEFAULT_CARD_HEIGHT;
-
-  // If it's already a valid CSS value, return as-is
-  if (typeof height === "string" && height.length > 0) {
-    // If it's just a number, add px
-    const numValue = parseFloat(height);
-    if (!isNaN(numValue) && height === String(numValue)) {
-      return `${numValue}px`;
-    }
-    return height;
-  }
-
-  return DEFAULT_CARD_HEIGHT;
+export function getCardHeight(value: string | undefined): string {
+  if (!value) return DEFAULT_CARD_HEIGHT;
+  // If it's just a number, add px
+  if (/^\d+$/.test(value)) return `${value}px`;
+  return value;
 }
 
 /**
- * Get card width based on config value
+ * Get card width CSS value from config
+ * Supports: "auto", "100%", "200px", "300", etc.
  */
-export function getCardWidth(width: string | undefined): string {
-  if (!width) return DEFAULT_CARD_WIDTH;
-
-  // If it's already a valid CSS value, return as-is
-  if (typeof width === "string" && width.length > 0) {
-    // If it's just a number, add px
-    const numValue = parseFloat(width);
-    if (!isNaN(numValue) && width === String(numValue)) {
-      return `${numValue}px`;
-    }
-    return width;
-  }
-
-  return DEFAULT_CARD_WIDTH;
+export function getCardWidth(value: string | undefined): string {
+  if (!value) return DEFAULT_CARD_WIDTH;
+  // If it's just a number, add px
+  if (/^\d+$/.test(value)) return `${value}px`;
+  return value;
 }
 
 /**
- * Get icon and container sizes based on config
+ * Get icon sizes based on size option
  */
 export function getIconSizes(size: IconSize | undefined): IconSizeConfig {
-  return ICON_SIZES[size || "default"];
+  const sizeKey = size || "default";
+  return ICON_SIZES[sizeKey] || ICON_SIZES.default;
 }
+
+/**
+ * Get CSS custom properties for element positioning based on icon and name positions
+ */
+export function getPositionStyles(
+  iconPosition: PositionOption = "right",
+  namePosition: PositionOption = "left"
+): PositionStyles {
+  // Map position to justify-self value
+  const positionToJustify = (pos: PositionOption): string => {
+    switch (pos) {
+      case "left": return "start";
+      case "center": return "center";
+      case "right": return "end";
+      default: return "start";
+    }
+  };
+
+  // Map position to text-align value
+  const positionToTextAlign = (pos: PositionOption): string => {
+    switch (pos) {
+      case "left": return "left";
+      case "center": return "center";
+      case "right": return "right";
+      default: return "left";
+    }
+  };
+
+  // Sensors (temp/humidity/power) go below name
+  // Binary sensors go below icon
+  const sensorsGridArea = `bottom-${namePosition}`;
+  const binarySensorsGridArea = `bottom-${iconPosition}`;
+
+  return {
+    nameGridArea: namePosition,
+    nameJustify: positionToJustify(namePosition),
+    nameTextAlign: positionToTextAlign(namePosition),
+    iconGridArea: iconPosition,
+    iconJustify: positionToJustify(iconPosition),
+    sensorsGridArea,
+    sensorsJustify: positionToJustify(namePosition),
+    sensorsPadding: namePosition === "right" ? "0 14px 1px 0" : namePosition === "center" ? "0 0 1px 0" : "0 0 1px 14px",
+    binarySensorsGridArea,
+    binarySensorsJustify: positionToJustify(iconPosition),
+    binarySensorsMargin: iconPosition === "left" ? "0 0 0 3px" : iconPosition === "center" ? "0" : "0 3px 0 0",
+  };
+}
+
+// =============================================================================
+// State Text Helper
+// =============================================================================
 
 /**
  * Get display text for entity state
@@ -159,27 +206,15 @@ export function getIconSizes(size: IconSize | undefined): IconSizeConfig {
 export function getStateText(entity: HassEntity | undefined): string {
   if (!entity) return "";
 
-  const state = entity.state;
   const domain = entity.entity_id.split(".")[0];
+  const state = entity.state;
+
+  // For lights with brightness, show percentage
+  if (domain === "light" && entity.attributes.brightness !== undefined) {
+    const brightness = Math.round((entity.attributes.brightness / 255) * 100);
+    return `${brightness}%`;
+  }
 
   // Capitalize first letter for display
-  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-  switch (domain) {
-    case "cover":
-      return capitalize(state); // Open, Closed, Opening, Closing
-    case "lock":
-      return capitalize(state); // Locked, Unlocked
-    case "media_player":
-      return capitalize(state); // Playing, Paused, Idle, Off
-    case "climate":
-      return capitalize(state); // Heat, Cool, Auto, Off
-    case "vacuum":
-      return capitalize(state); // Cleaning, Returning, Docked
-    case "person":
-    case "device_tracker":
-      return capitalize(state); // Home, Away, etc.
-    default:
-      return isEntityActive(entity) ? "On" : "Off";
-  }
+  return state.charAt(0).toUpperCase() + state.slice(1);
 }
