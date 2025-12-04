@@ -1,4 +1,4 @@
-// src/index.ts
+// @/src/index.ts
 
 // ============================================================================
 // INDEX - Entry point for the Sensor Display Card
