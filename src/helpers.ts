@@ -7,198 +7,160 @@
 import { HassEntity } from "home-assistant-js-websocket";
 import {
   ICON_SIZES,
+  ICON_ONLY_SIZES,
   LOCK_ICONS,
   LOCK_COLORS,
+  ICON_COLORS,
   DEFAULT_CARD_HEIGHT,
   DEFAULT_CARD_WIDTH,
+  LAYOUT_DEFAULT_HEIGHTS,
 } from "./constants";
-import type { IconSize, IconSizeConfig, PositionOption, PositionStyles } from "./types";
-
-// =============================================================================
-// Value Parsing
-// =============================================================================
+import type { IconSize, IconSizeConfig, LayoutMode, SensorDisplayCardConfig } from "./types";
 
 /**
- * Parse a sensor value to a number, returning undefined if invalid
+ * Parse a sensor value to a display string
  */
-export function parseValue(entity: HassEntity | undefined): number | undefined {
-  if (!entity) return undefined;
-  const val = parseFloat(entity.state);
-  return isNaN(val) ? undefined : val;
+export function parseValue(value: string | undefined): string {
+  if (!value || value === "unavailable" || value === "unknown") {
+    return "--";
+  }
+  const num = parseFloat(value);
+  return isNaN(num) ? "--" : num.toFixed(0);
 }
 
-// =============================================================================
-// Entity State Helpers
-// =============================================================================
-
 /**
- * Check if an entity is in an "active" state based on its domain
+ * Determine if an entity is in an "active" state based on its domain
  */
 export function isEntityActive(entity: HassEntity | undefined): boolean {
   if (!entity) return false;
 
-  const state = entity.state.toLowerCase();
+  const state = entity.state;
   const domain = entity.entity_id.split(".")[0];
 
-  // Domain-specific checks
+  // Handle unavailable/unknown states
+  if (state === "unavailable" || state === "unknown") return false;
+
   switch (domain) {
     case "light":
     case "switch":
-    case "input_boolean":
     case "fan":
-    case "climate":
-    case "humidifier":
-      return state === "on";
-
+    case "input_boolean":
+    case "automation":
+    case "script":
     case "binary_sensor":
       return state === "on";
 
-    case "lock":
-      return state === "locked";
-
     case "cover":
-      return state !== "closed";
+      return state === "open" || state === "opening";
+
+    case "lock":
+      return state === "unlocked" || state === "unlocking";
 
     case "media_player":
-      return state === "playing" || state === "on";
+      return state === "playing" || state === "paused" || state === "on" || state === "idle";
+
+    case "climate":
+      return state !== "off";
 
     case "vacuum":
-      return state === "cleaning";
+      return state === "cleaning" || state === "returning";
 
-    case "alarm_control_panel":
-      return state !== "disarmed";
+    case "person":
+    case "device_tracker":
+      return state === "home";
 
     default:
-      // For sensors and other entities, consider "on" or numeric > 0 as active
-      if (state === "on") return true;
-      const numVal = parseFloat(state);
-      if (!isNaN(numVal)) return numVal > 0;
-      return state !== "off" && state !== "unavailable" && state !== "unknown";
+      // For unknown domains, "on" is active
+      return state === "on";
   }
 }
 
 /**
- * Check if a door entity is open
+ * Check if door sensor is open (handles both 'on' and 'Window/door is open' states)
  */
 export function isDoorOpen(entity: HassEntity | undefined): boolean {
   if (!entity) return false;
-  return entity.state === "on";
+  const state = entity.state;
+  return state === "on" || state === "Window/door is open";
 }
 
 /**
- * Check if a window entity is open
+ * Check if window sensor is open (handles both 'on' and 'Window/door is open' states)
  */
 export function isWindowOpen(entity: HassEntity | undefined): boolean {
   if (!entity) return false;
-  return entity.state === "on";
+  const state = entity.state;
+  return state === "on" || state === "Window/door is open";
 }
 
-// =============================================================================
-// Lock Helpers
-// =============================================================================
-
 /**
- * Get the appropriate icon for a lock state
+ * Get lock icon based on state
  */
 export function getLockIcon(entity: HassEntity | undefined): string {
-  if (!entity) return LOCK_ICONS.unknown;
-  const state = entity.state.toLowerCase() as keyof typeof LOCK_ICONS;
+  if (!entity) return LOCK_ICONS.locked;
+  const state = entity.state as keyof typeof LOCK_ICONS;
   return LOCK_ICONS[state] || LOCK_ICONS.unknown;
 }
 
 /**
- * Get the CSS color variable for a lock state
+ * Get lock color CSS variable based on state
  */
 export function getLockColorVar(entity: HassEntity | undefined): string {
-  if (!entity) return LOCK_COLORS.unknown;
-  const state = entity.state.toLowerCase() as keyof typeof LOCK_COLORS;
+  if (!entity) return "var(--state-lock-locked-color, var(--primary-text-color))";
+  const state = entity.state as keyof typeof LOCK_COLORS;
   return LOCK_COLORS[state] || LOCK_COLORS.unknown;
 }
 
-// =============================================================================
-// Appearance Helpers
-// =============================================================================
-
 /**
- * Get card height CSS value from config
- * Supports: "97px", "120", "50%", etc.
+ * Get card height based on config value and layout mode
  */
-export function getCardHeight(value: string | undefined): string {
-  if (!value) return DEFAULT_CARD_HEIGHT;
-  // If it's just a number, add px
-  if (/^\d+$/.test(value)) return `${value}px`;
-  return value;
+export function getCardHeight(height: string | undefined, layout: LayoutMode = "full"): string {
+  // If explicit height is set, use it
+  if (height && height.length > 0) {
+    // If it's just a number, add px
+    const numValue = parseFloat(height);
+    if (!isNaN(numValue) && height === String(numValue)) {
+      return `${numValue}px`;
+    }
+    return height;
+  }
+
+  // Otherwise, use layout-specific default
+  return LAYOUT_DEFAULT_HEIGHTS[layout] || DEFAULT_CARD_HEIGHT;
 }
 
 /**
- * Get card width CSS value from config
- * Supports: "auto", "100%", "200px", "300", etc.
+ * Get card width based on config value
  */
-export function getCardWidth(value: string | undefined): string {
-  if (!value) return DEFAULT_CARD_WIDTH;
-  // If it's just a number, add px
-  if (/^\d+$/.test(value)) return `${value}px`;
-  return value;
+export function getCardWidth(width: string | undefined): string {
+  if (!width) return DEFAULT_CARD_WIDTH;
+
+  // If it's already a valid CSS value, return as-is
+  if (typeof width === "string" && width.length > 0) {
+    // If it's just a number, add px
+    const numValue = parseFloat(width);
+    if (!isNaN(numValue) && width === String(numValue)) {
+      return `${numValue}px`;
+    }
+    return width;
+  }
+
+  return DEFAULT_CARD_WIDTH;
 }
 
 /**
- * Get icon sizes based on size option
+ * Get icon and container sizes based on config and layout
  */
-export function getIconSizes(size: IconSize | undefined): IconSizeConfig {
+export function getIconSizes(size: IconSize | undefined, layout: LayoutMode = "full"): IconSizeConfig {
   const sizeKey = size || "default";
-  return ICON_SIZES[sizeKey] || ICON_SIZES.default;
+  
+  // Use larger icons for icon-only layout
+  if (layout === "icon-only") {
+    return ICON_ONLY_SIZES[sizeKey];
+  }
+  
+  return ICON_SIZES[sizeKey];
 }
-
-/**
- * Get CSS custom properties for element positioning based on icon and name positions
- */
-export function getPositionStyles(
-  iconPosition: PositionOption = "right",
-  namePosition: PositionOption = "left"
-): PositionStyles {
-  // Map position to justify-self value
-  const positionToJustify = (pos: PositionOption): string => {
-    switch (pos) {
-      case "left": return "start";
-      case "center": return "center";
-      case "right": return "end";
-      default: return "start";
-    }
-  };
-
-  // Map position to text-align value
-  const positionToTextAlign = (pos: PositionOption): string => {
-    switch (pos) {
-      case "left": return "left";
-      case "center": return "center";
-      case "right": return "right";
-      default: return "left";
-    }
-  };
-
-  // Sensors (temp/humidity/power) go below name
-  // Binary sensors go below icon
-  const sensorsGridArea = `bottom-${namePosition}`;
-  const binarySensorsGridArea = `bottom-${iconPosition}`;
-
-  return {
-    nameGridArea: namePosition,
-    nameJustify: positionToJustify(namePosition),
-    nameTextAlign: positionToTextAlign(namePosition),
-    iconGridArea: iconPosition,
-    iconJustify: positionToJustify(iconPosition),
-    sensorsGridArea,
-    sensorsJustify: positionToJustify(namePosition),
-    sensorsPadding: namePosition === "right" ? "0 14px 1px 0" : namePosition === "center" ? "0 0 1px 0" : "0 0 1px 14px",
-    binarySensorsGridArea,
-    binarySensorsJustify: positionToJustify(iconPosition),
-    binarySensorsMargin: iconPosition === "left" ? "0 0 0 3px" : iconPosition === "center" ? "0" : "0 3px 0 0",
-  };
-}
-
-// =============================================================================
-// State Text Helper
-// =============================================================================
 
 /**
  * Get display text for entity state
@@ -206,15 +168,143 @@ export function getPositionStyles(
 export function getStateText(entity: HassEntity | undefined): string {
   if (!entity) return "";
 
-  const domain = entity.entity_id.split(".")[0];
   const state = entity.state;
-
-  // For lights with brightness, show percentage
-  if (domain === "light" && entity.attributes.brightness !== undefined) {
-    const brightness = Math.round((entity.attributes.brightness / 255) * 100);
-    return `${brightness}%`;
-  }
+  const domain = entity.entity_id.split(".")[0];
 
   // Capitalize first letter for display
-  return state.charAt(0).toUpperCase() + state.slice(1);
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  switch (domain) {
+    case "cover":
+      return capitalize(state); // Open, Closed, Opening, Closing
+    case "lock":
+      return capitalize(state); // Locked, Unlocked
+    case "media_player":
+      return capitalize(state); // Playing, Paused, Idle, Off
+    case "climate":
+      return capitalize(state); // Heat, Cool, Auto, Off
+    case "vacuum":
+      return capitalize(state); // Cleaning, Returning, Docked
+    case "person":
+    case "device_tracker":
+      return capitalize(state); // Home, Away, etc.
+    default:
+      return isEntityActive(entity) ? "On" : "Off";
+  }
+}
+
+/**
+ * Get icon color based on configuration and entity states
+ */
+export function getIconColor(
+  config: SensorDisplayCardConfig,
+  _primaryEntity: HassEntity | undefined,
+  motionEntity: HassEntity | undefined,
+  rgbColor: [number, number, number] | undefined,
+  isOn: boolean
+): string {
+  const colorSource = config.icon_color_source || "default";
+
+  switch (colorSource) {
+    case "motion":
+      // Use motion sensor state to determine color
+      if (motionEntity?.state === "on") {
+        return ICON_COLORS.active;
+      }
+      return ICON_COLORS.on;
+
+    case "entity":
+      // Use primary entity state to determine color
+      if (isOn) {
+        // If entity has RGB color (light), use it
+        if (rgbColor) {
+          return `rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`;
+        }
+        return ICON_COLORS.active;
+      }
+      return ICON_COLORS.off;
+
+    case "default":
+    default:
+      // Default behavior: use RGB color if available, otherwise primary text
+      if (rgbColor && isOn) {
+        return `rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`;
+      }
+      return "";  // Empty string means use default CSS color
+  }
+}
+
+/**
+ * Get icon background color based on configuration and entity states
+ */
+export function getIconBgColor(
+  config: SensorDisplayCardConfig,
+  rgbColor: [number, number, number] | undefined,
+  isOn: boolean
+): string {
+  const colorSource = config.icon_color_source || "default";
+
+  // Only show RGB background in default mode with lights
+  if (colorSource === "default" && rgbColor && isOn) {
+    return `rgba(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]}, 0.2)`;
+  }
+
+  return "";  // Empty string means use default CSS background
+}
+
+/**
+ * Determine the effective layout mode based on configuration
+ * Auto-detects icon-only mode when appropriate settings are configured
+ */
+export function getEffectiveLayout(config: SensorDisplayCardConfig): LayoutMode {
+  // If layout is explicitly set, use it
+  if (config.layout) {
+    return config.layout;
+  }
+
+  // Auto-detect icon-only layout:
+  // - show_name is false
+  // - show_icon is true (or default)
+  // - No value sensors configured
+  // - No binary sensors configured (except motion for color)
+  const showName = config.show_name !== false;
+  const showIcon = config.show_icon !== false;
+  const hasValueSensors = !!(config.temp_sensor || config.humidity_sensor || config.power_sensor);
+  const hasBinarySensors = !!(
+    config.door_sensor ||
+    config.window_sensor ||
+    config.person_sensor ||
+    config.pet_sensor ||
+    config.vehicle_sensor ||
+    config.lock_entity
+  );
+
+  // If name is hidden, icon is shown, and no sensors are configured for display
+  if (!showName && showIcon && !hasValueSensors && !hasBinarySensors) {
+    return "icon-only";
+  }
+
+  return "full";
+}
+
+/**
+ * Check if any value sensors are configured
+ */
+export function hasValueSensors(config: SensorDisplayCardConfig): boolean {
+  return !!(config.temp_sensor || config.humidity_sensor || config.power_sensor);
+}
+
+/**
+ * Check if any binary sensors (including lock) are configured for display
+ */
+export function hasBinarySensorsForDisplay(config: SensorDisplayCardConfig): boolean {
+  return !!(
+    config.door_sensor ||
+    config.window_sensor ||
+    config.person_sensor ||
+    config.pet_sensor ||
+    config.vehicle_sensor ||
+    config.motion_sensor ||
+    config.lock_entity
+  );
 }
