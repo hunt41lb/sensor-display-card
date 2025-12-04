@@ -1,4 +1,4 @@
-// @/src/types.ts
+// src/types.ts
 
 // ============================================================================
 // TYPES - TypeScript interfaces for the card
@@ -12,9 +12,20 @@ import { ActionConfig } from "custom-card-helpers";
 export type IconSize = "small" | "default" | "large";
 
 /**
- * Position options for icon and name
+ * Layout mode options
+ * - full: Default layout with name, icon, and sensors
+ * - icon-only: Centered icon only, optimized for small cards
+ * - compact: Name + centered icon, no sensors row
  */
-export type PositionOption = "left" | "center" | "right";
+export type LayoutMode = "full" | "icon-only" | "compact";
+
+/**
+ * Icon color source options
+ * - default: Use entity RGB color (for lights) or primary text color
+ * - motion: Use motion sensor state to determine color
+ * - entity: Use primary entity state to determine color
+ */
+export type IconColorSource = "default" | "motion" | "entity";
 
 /**
  * Main card configuration interface
@@ -43,12 +54,12 @@ export interface SensorDisplayCardConfig {
   // Lock entity configuration
   lock_entity?: string;
 
-  // Appearance options
+  // Layout and appearance options
+  layout?: LayoutMode;
   card_height?: string;
   card_width?: string;
   icon_size?: IconSize;
-  icon_position?: PositionOption;
-  name_position?: PositionOption;
+  icon_color_source?: IconColorSource;
 
   // Display toggles
   show_name?: boolean;
@@ -85,23 +96,6 @@ export interface CardInfo {
 export interface IconSizeConfig {
   iconSize: string;
   containerSize: string;
-}
-
-/**
- * Position styles for CSS custom properties
- */
-export interface PositionStyles {
-  nameGridArea: string;
-  nameJustify: string;
-  nameTextAlign: string;
-  iconGridArea: string;
-  iconJustify: string;
-  sensorsGridArea: string;
-  sensorsJustify: string;
-  sensorsPadding: string;
-  binarySensorsGridArea: string;
-  binarySensorsJustify: string;
-  binarySensorsMargin: string;
 }
 
 /**
