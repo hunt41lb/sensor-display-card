@@ -1,10 +1,10 @@
-// src/constants.ts
+// @/src/constants.ts
 
 // ============================================================================
 // CONSTANTS - Single source of truth for version and card metadata
 // ============================================================================
 
-export const CARD_VERSION = "2.4.0";
+export const CARD_VERSION = "2.5.0";
 export const CARD_TYPE = "sensor-display-card";
 export const CARD_EDITOR_TYPE = "sensor-display-card-editor";
 export const CARD_NAME = "Sensor Display Card";
