@@ -1,4 +1,4 @@
-// @/src/styles.ts
+// src/styles.ts
 
 // ============================================================================
 // STYLES - CSS styles for the card and editor components
@@ -14,19 +14,17 @@ export const cardStyles = css`
     display: block;
   }
 
-  /* Card - using CSS custom properties for size and position customization */
+  /* ==========================================================================
+   * BASE CARD STYLES
+   * ========================================================================== */
+
   ha-card {
     display: grid;
-    grid-template-areas:
-      "left center right"
-      "bottom-left bottom-center bottom-right";
-    grid-template-rows: 1fr min-content;
-    grid-template-columns: 1fr 1fr 1fr;
     padding: 6px;
     height: var(--card-height, 97px);
     width: var(--card-width, auto);
-    border-radius: var(--ha-card-border-radius, 12px);
     box-sizing: border-box;
+    border-radius: var(--ha-card-border-radius, 12px);
     cursor: pointer;
     transition: background-color 0.3s ease, border 0.3s ease;
   }
@@ -41,12 +39,81 @@ export const cardStyles = css`
     border: var(--ha-card-border-width, 1px) solid color-mix(in srgb, var(--ha-card-border-color, var(--divider-color)) 50%, transparent);
   }
 
-  /* Name - using custom properties for position */
+  /* ==========================================================================
+   * LAYOUT: FULL (Default)
+   * Grid with name top-left, icon top-right, sensors bottom
+   * ========================================================================== */
+
+  ha-card.layout-full {
+    grid-template-areas:
+      "n n i i"
+      "temp temp temp sensors";
+    grid-template-rows: 1fr min-content;
+    grid-template-columns: min-content 1fr;
+  }
+
+  /* ==========================================================================
+   * LAYOUT: ICON-ONLY
+   * Centered icon, optimized for small cards like button-card templates
+   * ========================================================================== */
+
+  ha-card.layout-icon-only {
+    grid-template-areas: "i";
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  ha-card.layout-icon-only .icon-container {
+    justify-self: center;
+    align-self: center;
+  }
+
+  ha-card.layout-icon-only .name,
+  ha-card.layout-icon-only .sensors,
+  ha-card.layout-icon-only .binary-sensors {
+    display: none;
+  }
+
+  /* ==========================================================================
+   * LAYOUT: COMPACT
+   * Name on top, centered icon below, no sensors row
+   * ========================================================================== */
+
+  ha-card.layout-compact {
+    grid-template-areas:
+      "n"
+      "i";
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  ha-card.layout-compact .name {
+    justify-self: center;
+    text-align: center;
+    padding: 4px 8px;
+  }
+
+  ha-card.layout-compact .icon-container {
+    justify-self: center;
+    align-self: center;
+  }
+
+  ha-card.layout-compact .sensors,
+  ha-card.layout-compact .binary-sensors {
+    display: none;
+  }
+
+  /* ==========================================================================
+   * NAME ELEMENT
+   * ========================================================================== */
+
   .name {
-    grid-area: var(--name-grid-area, left);
-    justify-self: var(--name-justify, start);
+    grid-area: n;
+    justify-self: start;
     align-self: start;
-    text-align: var(--name-text-align, left);
+    text-align: left;
     font-size: 16px;
     font-weight: 500;
     color: var(--primary-text-color);
@@ -62,10 +129,13 @@ export const cardStyles = css`
     font-size: 14px;
   }
 
-  /* Icon container - using custom properties for size and position */
+  /* ==========================================================================
+   * ICON CONTAINER
+   * ========================================================================== */
+
   .icon-container {
-    grid-area: var(--icon-grid-area, right);
-    justify-self: var(--icon-justify, end);
+    grid-area: i;
+    justify-self: end;
     align-self: start;
     display: flex;
     align-items: center;
@@ -81,7 +151,7 @@ export const cardStyles = css`
     visibility: hidden;
   }
 
-  /* Icon - using custom properties for size */
+  /* Icon element */
   .icon-container ha-icon {
     width: var(--icon-size, 35px);
     height: var(--icon-size, 35px);
@@ -90,38 +160,45 @@ export const cardStyles = css`
     transition: color 0.3s ease;
   }
 
-  /* Sensors container - using custom properties for position */
+  /* Icon-only layout: no background circle, just the icon */
+  ha-card.layout-icon-only .icon-container {
+    background-color: transparent;
+    width: auto;
+    height: auto;
+  }
+
+  ha-card.layout-icon-only .icon-container ha-icon {
+    width: var(--icon-size, 50px);
+    height: var(--icon-size, 50px);
+    --mdc-icon-size: var(--icon-size, 50px);
+  }
+
+  /* ==========================================================================
+   * SENSORS CONTAINER (Temperature, Humidity, Power)
+   * ========================================================================== */
+
   .sensors {
-    grid-area: var(--sensors-grid-area, bottom-left);
-    justify-self: var(--sensors-justify, start);
+    grid-area: temp;
+    justify-self: start;
     display: flex;
     align-items: baseline;
     gap: 8px;
-    padding: var(--sensors-padding, 0 0 1px 14px);
+    padding: 0 0 1px 14px;
   }
 
-  .sensor {
-    font-size: 13px;
-    color: var(--secondary-text-color);
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-  }
-
-  .sensor ha-icon {
-    width: 14px;
-    height: 14px;
-    --mdc-icon-size: 14px;
-    color: var(--secondary-text-color);
-  }
-
-  .sensor .value {
-    font-weight: 500;
+  /* Temperature */
+  .temp {
+    font-size: 16px;
+    line-height: 16px;
+    font-weight: 300;
     color: var(--primary-text-color);
   }
 
-  .sensor .unit {
-    font-size: 10px;
+  /* Humidity and Power */
+  .humidity,
+  .power {
+    font-size: 12px;
+    font-weight: 400;
     opacity: 0.7;
     color: var(--primary-text-color);
   }
@@ -132,16 +209,19 @@ export const cardStyles = css`
     color: var(--secondary-text-color);
   }
 
-  /* Binary sensors row - using custom properties for position */
+  /* ==========================================================================
+   * BINARY SENSORS ROW
+   * ========================================================================== */
+
   .binary-sensors {
-    grid-area: var(--binary-sensors-grid-area, bottom-right);
-    justify-self: var(--binary-sensors-justify, end);
+    grid-area: sensors;
+    justify-self: end;
     align-self: end;
     display: flex;
     align-items: center;
     gap: 4px;
     padding: 0 0 1px 2px;
-    margin: var(--binary-sensors-margin, 0 3px 0 0);
+    margin: 0 3px 0 0;
   }
 
   .binary-sensors .binary-sensor {
@@ -172,6 +252,10 @@ export const cardStyles = css`
     transition: color 0.3s ease;
   }
 
+  /* ==========================================================================
+   * ANIMATIONS
+   * ========================================================================== */
+
   @keyframes pulse {
     0%,
     100% {
@@ -181,25 +265,26 @@ export const cardStyles = css`
       opacity: 0.5;
     }
   }
+
+  /* ==========================================================================
+   * UTILITY CLASSES
+   * ========================================================================== */
+
+  .unavailable {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--secondary-text-color);
+    font-style: italic;
+  }
 `;
 
 /**
  * Styles for the editor component
  */
 export const editorStyles = css`
-  .card-config {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
   ha-form {
     display: block;
-  }
-
-  /* Fix expandable section styling */
-  ha-expansion-panel {
-    display: block;
-    --expansion-panel-content-padding: 0 16px 16px;
   }
 `;
