@@ -1,4 +1,4 @@
-// @/src/editor.ts
+// src/editor.ts
 
 // ============================================================================
 // EDITOR - Visual configuration editor component
