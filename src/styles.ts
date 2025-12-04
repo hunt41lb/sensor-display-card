@@ -1,4 +1,4 @@
-// src/styles.ts
+// @/src/styles.ts
 
 // ============================================================================
 // STYLES - CSS styles for the card and editor components
@@ -14,19 +14,19 @@ export const cardStyles = css`
     display: block;
   }
 
-  /* Card - using CSS custom properties for size customization */
+  /* Card - using CSS custom properties for size and position customization */
   ha-card {
     display: grid;
     grid-template-areas:
-      "n n i i"
-      "temp temp temp sensors";
+      "left center right"
+      "bottom-left bottom-center bottom-right";
     grid-template-rows: 1fr min-content;
-    grid-template-columns: min-content 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     padding: 6px;
     height: var(--card-height, 97px);
     width: var(--card-width, auto);
-    box-sizing: border-box;
     border-radius: var(--ha-card-border-radius, 12px);
+    box-sizing: border-box;
     cursor: pointer;
     transition: background-color 0.3s ease, border 0.3s ease;
   }
@@ -41,12 +41,12 @@ export const cardStyles = css`
     border: var(--ha-card-border-width, 1px) solid color-mix(in srgb, var(--ha-card-border-color, var(--divider-color)) 50%, transparent);
   }
 
-  /* Name */
+  /* Name - using custom properties for position */
   .name {
-    grid-area: n;
-    justify-self: start;
+    grid-area: var(--name-grid-area, left);
+    justify-self: var(--name-justify, start);
     align-self: start;
-    text-align: left;
+    text-align: var(--name-text-align, left);
     font-size: 16px;
     font-weight: 500;
     color: var(--primary-text-color);
@@ -62,10 +62,10 @@ export const cardStyles = css`
     font-size: 14px;
   }
 
-  /* Icon container - using custom properties for size */
+  /* Icon container - using custom properties for size and position */
   .icon-container {
-    grid-area: i;
-    justify-self: end;
+    grid-area: var(--icon-grid-area, right);
+    justify-self: var(--icon-justify, end);
     align-self: start;
     display: flex;
     align-items: center;
@@ -90,29 +90,38 @@ export const cardStyles = css`
     transition: color 0.3s ease;
   }
 
-  /* Sensors container */
+  /* Sensors container - using custom properties for position */
   .sensors {
-    grid-area: temp;
-    justify-self: start;
+    grid-area: var(--sensors-grid-area, bottom-left);
+    justify-self: var(--sensors-justify, start);
     display: flex;
     align-items: baseline;
     gap: 8px;
-    padding: 0 0 1px 14px;
+    padding: var(--sensors-padding, 0 0 1px 14px);
   }
 
-  /* Temperature */
-  .temp {
-    font-size: 16px;
-    line-height: 16px;
-    font-weight: 300;
+  .sensor {
+    font-size: 13px;
+    color: var(--secondary-text-color);
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+
+  .sensor ha-icon {
+    width: 14px;
+    height: 14px;
+    --mdc-icon-size: 14px;
+    color: var(--secondary-text-color);
+  }
+
+  .sensor .value {
+    font-weight: 500;
     color: var(--primary-text-color);
   }
 
-  /* Humidity and Power */
-  .humidity,
-  .power {
-    font-size: 12px;
-    font-weight: 400;
+  .sensor .unit {
+    font-size: 10px;
     opacity: 0.7;
     color: var(--primary-text-color);
   }
@@ -123,16 +132,16 @@ export const cardStyles = css`
     color: var(--secondary-text-color);
   }
 
-  /* Binary sensors row */
+  /* Binary sensors row - using custom properties for position */
   .binary-sensors {
-    grid-area: sensors;
-    justify-self: end;
+    grid-area: var(--binary-sensors-grid-area, bottom-right);
+    justify-self: var(--binary-sensors-justify, end);
     align-self: end;
     display: flex;
     align-items: center;
     gap: 4px;
     padding: 0 0 1px 2px;
-    margin: 0 3px 0 0;
+    margin: var(--binary-sensors-margin, 0 3px 0 0);
   }
 
   .binary-sensors .binary-sensor {
@@ -172,22 +181,25 @@ export const cardStyles = css`
       opacity: 0.5;
     }
   }
-
-  .unavailable {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--secondary-text-color);
-    font-style: italic;
-  }
 `;
 
 /**
  * Styles for the editor component
  */
 export const editorStyles = css`
+  .card-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   ha-form {
     display: block;
+  }
+
+  /* Fix expandable section styling */
+  ha-expansion-panel {
+    display: block;
+    --expansion-panel-content-padding: 0 16px 16px;
   }
 `;
