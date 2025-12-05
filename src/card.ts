@@ -26,6 +26,8 @@ import {
   getIconColor,
   getIconBackgroundColor,
   getEffectiveLayout,
+  isActivityDetected,
+  hasActivitySensors,
 } from "./helpers";
 import type { SensorDisplayCardConfig, LayoutMode } from "./types";
 
@@ -343,6 +345,12 @@ export class SensorDisplayCard extends LitElement {
     const showState = this._config.show_state === true;
     const showIconBackground = this._config.show_icon_background !== false;
 
+    // Activity animation - check if enabled and if any activity sensors are active
+    const activityAnimationEnabled = this._config.icon_activity_animation !== false;
+    const hasActivitySensorsConfigured = hasActivitySensors(this._config);
+    const activityActive = isActivityDetected(motionEntity, personEntity, petEntity, vehicleEntity);
+    const showActivityAnimation = activityAnimationEnabled && hasActivitySensorsConfigured && activityActive;
+
     // State text using domain-aware helper
     const stateText = getStateText(primaryEntity);
 
@@ -378,6 +386,7 @@ export class SensorDisplayCard extends LitElement {
                 style="${showIconBackground && iconBackgroundStyle ? `background-color: ${iconBackgroundStyle}` : ""}"
               >
                 <ha-icon
+                  class="${showActivityAnimation ? "activity-pulse" : ""}"
                   .icon=${icon}
                   style="${iconColorStyle ? `color: ${iconColorStyle}` : ""}"
                 ></ha-icon>
