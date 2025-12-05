@@ -55,6 +55,7 @@ export const cardStyles = css`
   /* ==========================================================================
    * LAYOUT: ICON-ONLY
    * Centered icon, optimized for small cards like button-card templates
+   * Responsive sizing calculated in JS based on card height
    * ========================================================================== */
 
   ha-card.layout-icon-only {
@@ -62,15 +63,11 @@ export const cardStyles = css`
     grid-template-rows: 1fr;
     grid-template-columns: 1fr;
     padding: 10px;
-    overflow: hidden;
   }
 
   ha-card.layout-icon-only .icon-container {
     justify-self: center;
     align-self: center;
-    /* Constrain to available space while maintaining aspect ratio */
-    max-width: calc(100%);
-    max-height: calc(100%);
   }
 
   ha-card.layout-icon-only .name,
@@ -173,8 +170,6 @@ export const cardStyles = css`
   ha-card.layout-icon-only .icon-container.no-background {
     width: auto;
     height: auto;
-    max-width: none;
-    max-height: none;
   }
 
   ha-card.layout-icon-only .icon-container ha-icon {
