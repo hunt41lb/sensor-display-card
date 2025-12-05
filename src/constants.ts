@@ -4,7 +4,7 @@
 // CONSTANTS - Single source of truth for version and card metadata
 // ============================================================================
 
-export const CARD_VERSION = "2.5.0";
+export const CARD_VERSION = "2.5.1";
 export const CARD_TYPE = "sensor-display-card";
 export const CARD_EDITOR_TYPE = "sensor-display-card-editor";
 export const CARD_NAME = "Sensor Display Card";
@@ -20,6 +20,7 @@ export const DEFAULT_CONFIG = {
   show_name: true,
   show_icon: true,
   show_state: false,
+  show_icon_background: true,
   icon_color_source: "default" as const,
   tap_action: { action: "toggle" as const },
   hold_action: { action: "more-info" as const },
