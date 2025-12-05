@@ -65,6 +65,7 @@ export interface SensorDisplayCardConfig {
   show_name?: boolean;
   show_icon?: boolean;
   show_state?: boolean;
+  show_icon_background?: boolean;
 
   // Actions
   tap_action?: ActionConfig;
