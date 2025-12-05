@@ -23,7 +23,7 @@ import {
   getIconSizes,
   getStateText,
   getIconColor,
-  getIconBgColor,
+  getIconBackgroundColor,
   getEffectiveLayout,
 } from "./helpers";
 import type { SensorDisplayCardConfig, LayoutMode } from "./types";
@@ -316,7 +316,7 @@ export class SensorDisplayCard extends LitElement {
 
     // Dynamic icon styles using helper functions
     const iconColorStyle = getIconColor(this._config, primaryEntity, motionEntity, rgbColor, isOn);
-    const iconBgStyle = getIconBgColor(this._config, rgbColor, isOn);
+    const iconBackgroundStyle = getIconBackgroundColor(this._config, rgbColor, isOn);
 
     // Build the card style with CSS custom properties
     const cardStyle = `
@@ -333,6 +333,7 @@ export class SensorDisplayCard extends LitElement {
     const showName = this._config.show_name !== false;
     const showIcon = this._config.show_icon !== false;
     const showState = this._config.show_state === true;
+    const showIconBackground = this._config.show_icon_background !== false;
 
     // State text using domain-aware helper
     const stateText = getStateText(primaryEntity);
@@ -365,8 +366,8 @@ export class SensorDisplayCard extends LitElement {
         ${showIcon
           ? html`
               <div
-                class="icon-container"
-                style="${iconBgStyle ? `background-color: ${iconBgStyle}` : ""}"
+                class="icon-container${showIconBackground ? "" : " no-background"}"
+                style="${showIconBackground && iconBackgroundStyle ? `background-color: ${iconBackgroundStyle}` : ""}"
               >
                 <ha-icon
                   .icon=${icon}
