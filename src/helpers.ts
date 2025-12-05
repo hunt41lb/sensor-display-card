@@ -342,3 +342,33 @@ export function hasBinarySensorsForDisplay(config: SensorDisplayCardConfig): boo
     config.lock_entity
   );
 }
+
+/**
+ * Check if any activity detection sensors are currently active
+ * Activity sensors include: motion, person, pet, vehicle
+ */
+export function isActivityDetected(
+  motionEntity: HassEntity | undefined,
+  personEntity: HassEntity | undefined,
+  petEntity: HassEntity | undefined,
+  vehicleEntity: HassEntity | undefined
+): boolean {
+  return (
+    motionEntity?.state === "on" ||
+    personEntity?.state === "on" ||
+    petEntity?.state === "on" ||
+    vehicleEntity?.state === "on"
+  );
+}
+
+/**
+ * Check if any activity sensors are configured
+ */
+export function hasActivitySensors(config: SensorDisplayCardConfig): boolean {
+  return !!(
+    config.motion_sensor ||
+    config.person_sensor ||
+    config.pet_sensor ||
+    config.vehicle_sensor
+  );
+}
