@@ -179,6 +179,13 @@ export const EDITOR_SCHEMA = [
         selector: { boolean: {} },
         default: true,
       },
+      {
+        name: "icon_activity_animation",
+        label: "Animate Icon on Activity",
+        helper: "Pulse icon when motion, person, pet, or vehicle is detected",
+        selector: { boolean: {} },
+        default: true,
+      },
     ],
   },
 
