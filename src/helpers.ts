@@ -153,12 +153,12 @@ export function getCardWidth(width: string | undefined): string {
  */
 export function getIconSizes(size: IconSize | undefined, layout: LayoutMode = "full"): IconSizeConfig {
   const sizeKey = size || "default";
-  
+
   // Use larger icons for icon-only layout
   if (layout === "icon-only") {
     return ICON_ONLY_SIZES[sizeKey];
   }
-  
+
   return ICON_SIZES[sizeKey];
 }
 
@@ -237,7 +237,7 @@ export function getIconColor(
 /**
  * Get icon background color based on configuration and entity states
  */
-export function getIconBgColor(
+export function getIconBackgroundColor(
   config: SensorDisplayCardConfig,
   rgbColor: [number, number, number] | undefined,
   isOn: boolean
