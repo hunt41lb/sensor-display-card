@@ -172,6 +172,13 @@ export const EDITOR_SCHEMA = [
         selector: { boolean: {} },
         default: false,
       },
+      {
+        name: "show_icon_background",
+        label: "Show Icon Background",
+        helper: "Display circular background behind the icon",
+        selector: { boolean: {} },
+        default: true,
+      },
     ],
   },
 
