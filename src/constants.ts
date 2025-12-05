@@ -34,7 +34,7 @@ export const DEFAULT_CARD_WIDTH = "auto";
 // Layout-specific default heights
 export const LAYOUT_DEFAULT_HEIGHTS = {
   full: "97px",
-  "icon-only": "70px",
+  "icon-only": "85px",
   compact: "80px",
 } as const;
 
