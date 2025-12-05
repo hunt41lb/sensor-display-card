@@ -21,6 +21,7 @@ import {
   getCardHeight,
   getCardWidth,
   getIconSizes,
+  calculateResponsiveIconSizes,
   getStateText,
   getIconColor,
   getIconBackgroundColor,
@@ -312,7 +313,14 @@ export class SensorDisplayCard extends LitElement {
     // Appearance: Calculate sizes based on layout
     const cardHeight = getCardHeight(this._config.card_height, layout);
     const cardWidth = getCardWidth(this._config.card_width);
-    const { iconSize, containerSize } = getIconSizes(this._config.icon_size, layout);
+
+    // Get icon sizes - returns null for icon-only without explicit size
+    const explicitSizes = getIconSizes(this._config.icon_size, layout);
+
+    // Use responsive sizing for icon-only layout when no explicit size is set
+    const { iconSize, containerSize } = explicitSizes
+      ? explicitSizes
+      : calculateResponsiveIconSizes(cardHeight);
 
     // Dynamic icon styles using helper functions
     const iconColorStyle = getIconColor(this._config, primaryEntity, motionEntity, rgbColor, isOn);
