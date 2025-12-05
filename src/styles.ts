@@ -271,6 +271,28 @@ export const cardStyles = css`
     }
   }
 
+  @keyframes activity-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 0 transparent);
+    }
+    50% {
+      transform: scale(1.1);
+      filter: drop-shadow(0 0 8px var(--state-binary_sensor-active-color, var(--state-active-color, #ffc107)));
+    }
+  }
+
+  /* Activity pulse animation for icon when motion/activity detected */
+  .icon-container ha-icon.activity-pulse {
+    animation: activity-pulse 1.5s ease-in-out infinite;
+  }
+
+  /* Transition for smooth fade-out when animation stops */
+  .icon-container ha-icon {
+    transition: transform 0.5s ease, filter 0.5s ease;
+  }
+
   /* ==========================================================================
    * UTILITY CLASSES
    * ========================================================================== */
