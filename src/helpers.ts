@@ -150,16 +150,50 @@ export function getCardWidth(width: string | undefined): string {
 
 /**
  * Get icon and container sizes based on config and layout
+ * Returns null for icon-only layout without explicit size (use responsive sizing)
  */
-export function getIconSizes(size: IconSize | undefined, layout: LayoutMode = "full"): IconSizeConfig {
+export function getIconSizes(size: IconSize | undefined, layout: LayoutMode = "full"): IconSizeConfig | null {
+  // For icon-only layout without explicit size, return null to signal responsive sizing
+  if (layout === "icon-only" && !size) {
+    return null;
+  }
+
   const sizeKey = size || "default";
 
-  // Use larger icons for icon-only layout
+  // Use larger icons for icon-only layout with explicit size
   if (layout === "icon-only") {
     return ICON_ONLY_SIZES[sizeKey];
   }
 
   return ICON_SIZES[sizeKey];
+}
+
+/**
+ * Calculate responsive icon sizes based on available card height
+ * Used for icon-only layout when no explicit icon_size is set
+ */
+export function calculateResponsiveIconSizes(cardHeight: string, padding: number = 20): IconSizeConfig {
+  // Parse the height value (assumes px or number)
+  let heightValue = parseFloat(cardHeight);
+
+  // If parsing fails, use default
+  if (isNaN(heightValue)) {
+    heightValue = 85; // default icon-only height
+  }
+
+  // Calculate available space (height minus padding)
+  const availableSpace = heightValue - padding;
+
+  // Container fills available space (min 40px to stay usable)
+  const containerSize = Math.max(40, availableSpace);
+
+  // Icon is 70% of container
+  const iconSize = Math.round(containerSize * 0.7);
+
+  return {
+    iconSize: `${iconSize}px`,
+    containerSize: `${containerSize}px`,
+  };
 }
 
 /**
