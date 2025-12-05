@@ -151,6 +151,11 @@ export const cardStyles = css`
     visibility: hidden;
   }
 
+  /* No background mode - removes circular background */
+  .icon-container.no-background {
+    background-color: transparent;
+  }
+
   /* Icon element */
   .icon-container ha-icon {
     width: var(--icon-size, 35px);
