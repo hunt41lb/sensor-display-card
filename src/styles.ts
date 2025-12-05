@@ -62,11 +62,15 @@ export const cardStyles = css`
     grid-template-rows: 1fr;
     grid-template-columns: 1fr;
     padding: 10px;
+    overflow: hidden;
   }
 
   ha-card.layout-icon-only .icon-container {
     justify-self: center;
     align-self: center;
+    /* Constrain to available space while maintaining aspect ratio */
+    max-width: calc(100%);
+    max-height: calc(100%);
   }
 
   ha-card.layout-icon-only .name,
@@ -165,15 +169,12 @@ export const cardStyles = css`
     transition: color 0.3s ease;
   }
 
-  /* Icon-only layout: centered icon */
-  ha-card.layout-icon-only .icon-container {
-    /* Background controlled by show_icon_background via .no-background class */
-  }
-
   /* Icon-only layout without background - collapse container to icon size */
   ha-card.layout-icon-only .icon-container.no-background {
     width: auto;
     height: auto;
+    max-width: none;
+    max-height: none;
   }
 
   ha-card.layout-icon-only .icon-container ha-icon {
