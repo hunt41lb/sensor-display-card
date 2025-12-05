@@ -165,9 +165,13 @@ export const cardStyles = css`
     transition: color 0.3s ease;
   }
 
-  /* Icon-only layout: no background circle, just the icon */
+  /* Icon-only layout: centered icon */
   ha-card.layout-icon-only .icon-container {
-    background-color: transparent;
+    /* Background controlled by show_icon_background via .no-background class */
+  }
+
+  /* Icon-only layout without background - collapse container to icon size */
+  ha-card.layout-icon-only .icon-container.no-background {
     width: auto;
     height: auto;
   }
