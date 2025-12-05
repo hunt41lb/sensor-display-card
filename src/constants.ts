@@ -21,6 +21,7 @@ export const DEFAULT_CONFIG = {
   show_icon: true,
   show_state: false,
   show_icon_background: true,
+  icon_activity_animation: true,
   icon_color_source: "default" as const,
   tap_action: { action: "toggle" as const },
   hold_action: { action: "more-info" as const },
