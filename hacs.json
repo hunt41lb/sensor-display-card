@@ -1,5 +1,5 @@
 {
-  "name": "Sensor Display Card",
+  "name": "Unified Room Card",
   "render_readme": true,
-  "filename": "sensor-display-card.js"
+  "filename": "unified-room-card.js"
 }

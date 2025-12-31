@@ -1,39 +1,49 @@
 {
-  "name": "sensor-display-card",
-  "version": "2.5.1",
-  "description": "Home Assistant custom card displaying RGB lights with temperature, humidity, power, and motion sensors",
-  "main": "dist/sensor-display-card.js",
+  "name": "unified-room-card",
+  "version": "1.0.2",
+  "description": "A comprehensive room status card for Home Assistant with support for climate, persistent, and intermittent entities.",
+  "main": "dist/unified-room-card.js",
+  "module": "dist/unified-room-card.js",
+  "type": "module",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c --watch",
     "lint": "eslint src/**/*.ts",
-    "clean": "rm -rf dist"
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "clean": "rm -rf dist/*"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hunt41lb/sensor-display-card"
+    "url": "https://github.com/yourusername/unified-room-card"
   },
   "keywords": [
     "home-assistant",
     "lovelace",
     "custom-card",
-    "hacs"
+    "hacs",
+    "room-card",
+    "climate",
+    "sensor"
   ],
-  "author": "Thomas Hunt",
+  "author": "Thomas",
   "license": "MIT",
-  "dependencies": {
-    "custom-card-helpers": "^1.9.0",
-    "home-assistant-js-websocket": "^9.4.0",
-    "lit": "^3.2.1"
-  },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^28.0.1",
-    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
-    "@types/node": "^22.9.0",
-    "rollup": "^4.27.3",
-    "rollup-plugin-serve": "^3.0.0",
-    "rollup-plugin-typescript2": "^0.36.0",
-    "typescript": "^5.6.3"
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "rollup": "^4.12.0",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "lit": "^3.1.2"
+  },
+  "hacs": {
+    "name": "Unified Room Card",
+    "filename": "unified-room-card.js"
   }
 }
